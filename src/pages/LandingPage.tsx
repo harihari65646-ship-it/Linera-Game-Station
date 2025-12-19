@@ -64,8 +64,7 @@ const games = [
     icon: <DiceIcon />,
     players: "2-4 Players",
     color: "purple" as const,
-    onlineCount: 0,
-    isComingSoon: true,
+    onlineCount: 67,
   },
   {
     type: "uno" as const,
@@ -74,8 +73,7 @@ const games = [
     icon: <UnoIcon />,
     players: "2-4 Players",
     color: "pink" as const,
-    onlineCount: 0,
-    isComingSoon: true,
+    onlineCount: 124,
   },
 ];
 
