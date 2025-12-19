@@ -5,28 +5,32 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium ring-offset-background transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-[0_0_20px_hsl(var(--primary)/0.5)]",
-        destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90 hover:shadow-[0_0_20px_hsl(var(--destructive)/0.5)]",
-        outline: "border border-primary/50 bg-transparent text-primary hover:bg-primary/10 hover:border-primary hover:shadow-[0_0_20px_hsl(var(--primary)/0.3)]",
-        secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80 hover:shadow-[0_0_20px_hsl(var(--secondary)/0.5)]",
+        default: "bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-glow-sm active:scale-95",
+        destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90 hover:shadow-glow-pink active:scale-95",
+        outline: "border-2 border-primary/50 bg-transparent text-primary hover:bg-primary/10 hover:border-primary hover:shadow-glow-sm active:scale-95",
+        secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80 hover:shadow-glow-purple active:scale-95",
         ghost: "text-foreground hover:bg-muted hover:text-foreground",
         link: "text-primary underline-offset-4 hover:underline",
-        neon: "bg-transparent border-2 border-primary text-primary font-pixel text-xs uppercase tracking-wider hover:bg-primary hover:text-primary-foreground hover:shadow-[0_0_30px_hsl(var(--primary)/0.6)] active:scale-95",
-        "neon-purple": "bg-transparent border-2 border-secondary text-secondary font-pixel text-xs uppercase tracking-wider hover:bg-secondary hover:text-secondary-foreground hover:shadow-[0_0_30px_hsl(var(--secondary)/0.6)] active:scale-95",
-        "neon-green": "bg-transparent border-2 border-accent text-accent font-pixel text-xs uppercase tracking-wider hover:bg-accent hover:text-accent-foreground hover:shadow-[0_0_30px_hsl(var(--accent)/0.6)] active:scale-95",
-        "neon-pink": "bg-transparent border-2 border-destructive text-destructive font-pixel text-xs uppercase tracking-wider hover:bg-destructive hover:text-destructive-foreground hover:shadow-[0_0_30px_hsl(var(--destructive)/0.6)] active:scale-95",
-        arcade: "bg-gradient-to-r from-primary to-secondary text-primary-foreground font-pixel text-xs uppercase tracking-wider hover:shadow-[0_0_40px_hsl(var(--primary)/0.5),0_0_60px_hsl(var(--secondary)/0.3)] hover:scale-105 active:scale-95",
-        pixel: "bg-primary text-primary-foreground font-pixel text-xs uppercase tracking-wider border-b-4 border-primary/50 hover:border-b-2 hover:translate-y-0.5 active:border-b-0 active:translate-y-1",
+        // Neon variants
+        neon: "bg-transparent border-2 border-primary text-primary font-display text-xs uppercase tracking-wider hover:bg-primary hover:text-primary-foreground hover:shadow-glow-cyan active:scale-95",
+        "neon-purple": "bg-transparent border-2 border-secondary text-secondary font-display text-xs uppercase tracking-wider hover:bg-secondary hover:text-secondary-foreground hover:shadow-glow-purple active:scale-95",
+        "neon-green": "bg-transparent border-2 border-accent text-accent font-display text-xs uppercase tracking-wider hover:bg-accent hover:text-accent-foreground hover:shadow-glow-green active:scale-95",
+        "neon-pink": "bg-transparent border-2 border-destructive text-destructive font-display text-xs uppercase tracking-wider hover:bg-destructive hover:text-destructive-foreground hover:shadow-glow-pink active:scale-95",
+        // Premium variants
+        arcade: "bg-gradient-to-r from-primary via-secondary to-primary bg-[length:200%_100%] text-primary-foreground font-display text-xs uppercase tracking-wider hover:bg-[position:100%_0] hover:shadow-glow-cyan active:scale-95 animate-gradient-shift",
+        premium: "relative bg-transparent text-foreground font-display text-xs uppercase tracking-wider overflow-hidden before:absolute before:inset-0 before:bg-gradient-to-r before:from-primary before:via-secondary before:to-primary before:bg-[length:200%_100%] before:animate-gradient-shift before:-z-10 hover:shadow-glow-cyan active:scale-95",
+        glass: "glass text-foreground font-medium hover:bg-muted/50 active:scale-95",
+        glow: "bg-primary text-primary-foreground font-display text-xs uppercase tracking-wider shadow-glow-cyan hover:shadow-glow-lg active:scale-95 animate-pulse-glow",
       },
       size: {
         default: "h-10 px-4 py-2",
-        sm: "h-9 rounded-md px-3",
-        lg: "h-11 rounded-md px-8",
-        xl: "h-14 rounded-lg px-10 text-base",
+        sm: "h-9 rounded-lg px-3",
+        lg: "h-12 rounded-xl px-8",
+        xl: "h-14 rounded-xl px-10 text-base",
         icon: "h-10 w-10",
       },
     },

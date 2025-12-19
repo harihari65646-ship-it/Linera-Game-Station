@@ -3,17 +3,19 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const cardVariants = cva(
-  "rounded-lg border bg-card text-card-foreground transition-all duration-300",
+  "rounded-xl border text-card-foreground transition-all duration-300",
   {
     variants: {
       variant: {
-        default: "shadow-sm",
-        arcade: "bg-gradient-to-br from-card to-background border-border/50 shadow-[0_4px_30px_hsl(var(--background)/0.8)] hover:border-primary/30 hover:shadow-[0_4px_30px_hsl(var(--background)/0.8),0_0_20px_hsl(var(--primary)/0.2)] hover:-translate-y-1",
-        neon: "bg-card/80 backdrop-blur-sm border-primary/30 shadow-[0_0_20px_hsl(var(--primary)/0.2)] hover:border-primary/60 hover:shadow-[0_0_30px_hsl(var(--primary)/0.4)]",
-        "neon-purple": "bg-card/80 backdrop-blur-sm border-secondary/30 shadow-[0_0_20px_hsl(var(--secondary)/0.2)] hover:border-secondary/60 hover:shadow-[0_0_30px_hsl(var(--secondary)/0.4)]",
-        "neon-green": "bg-card/80 backdrop-blur-sm border-accent/30 shadow-[0_0_20px_hsl(var(--accent)/0.2)] hover:border-accent/60 hover:shadow-[0_0_30px_hsl(var(--accent)/0.4)]",
-        "neon-pink": "bg-card/80 backdrop-blur-sm border-destructive/30 shadow-[0_0_20px_hsl(var(--destructive)/0.2)] hover:border-destructive/60 hover:shadow-[0_0_30px_hsl(var(--destructive)/0.4)]",
-        game: "bg-gradient-to-br from-muted/50 to-card border-border hover:border-primary/50 hover:shadow-[0_0_40px_hsl(var(--primary)/0.3)] cursor-pointer hover:scale-[1.02]",
+        default: "bg-card shadow-md",
+        arcade: "bg-gradient-to-br from-card to-background border-border/50 shadow-lg hover:border-primary/30 hover:shadow-[0_8px_30px_hsl(var(--primary)/0.15)] hover:-translate-y-1",
+        glass: "glass-card hover:border-primary/30 hover:shadow-glow-cyan hover:-translate-y-1",
+        neon: "bg-card/80 backdrop-blur-sm border-primary/40 shadow-glow-sm hover:border-primary hover:shadow-glow-md",
+        "neon-purple": "bg-card/80 backdrop-blur-sm border-secondary/40 shadow-[0_0_20px_hsl(var(--secondary)/0.2)] hover:border-secondary hover:shadow-[0_0_30px_hsl(var(--secondary)/0.4)]",
+        "neon-green": "bg-card/80 backdrop-blur-sm border-accent/40 shadow-[0_0_20px_hsl(var(--accent)/0.2)] hover:border-accent hover:shadow-[0_0_30px_hsl(var(--accent)/0.4)]",
+        "neon-pink": "bg-card/80 backdrop-blur-sm border-destructive/40 shadow-[0_0_20px_hsl(var(--destructive)/0.2)] hover:border-destructive hover:shadow-[0_0_30px_hsl(var(--destructive)/0.4)]",
+        game: "bg-gradient-to-br from-muted/30 to-card/80 backdrop-blur-sm border-border/50 hover:border-primary/50 hover:shadow-glow-cyan cursor-pointer hover:scale-[1.02]",
+        premium: "glass-card border-0 relative before:absolute before:inset-0 before:rounded-xl before:p-[1px] before:bg-gradient-to-br before:from-primary/50 before:via-secondary/50 before:to-accent/50 before:-z-10 hover:shadow-glow-cyan hover:-translate-y-2",
       },
     },
     defaultVariants: {
@@ -46,7 +48,7 @@ CardHeader.displayName = "CardHeader";
 
 const CardTitle = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLHeadingElement>>(
   ({ className, ...props }, ref) => (
-    <h3 ref={ref} className={cn("text-lg font-pixel leading-none tracking-tight", className)} {...props} />
+    <h3 ref={ref} className={cn("text-lg font-display font-bold leading-none tracking-tight", className)} {...props} />
   ),
 );
 CardTitle.displayName = "CardTitle";
