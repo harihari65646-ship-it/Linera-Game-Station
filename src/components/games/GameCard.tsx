@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, Play, Trophy, Clock } from "lucide-react";
+import { Users, Play } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export type GameType = "snake" | "tictactoe" | "snakeladders" | "uno";
@@ -14,7 +14,6 @@ interface GameCardProps {
   players: string;
   color: "cyan" | "purple" | "pink" | "green";
   onlineCount?: number;
-  isComingSoon?: boolean;
 }
 
 const colorClasses = {
@@ -56,7 +55,6 @@ export function GameCard({
   players,
   color,
   onlineCount = 0,
-  isComingSoon = false,
 }: GameCardProps) {
   const colors = colorClasses[color];
 
@@ -115,32 +113,16 @@ export function GameCard({
           </div>
 
           {/* Action Button */}
-          {isComingSoon ? (
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Clock className="w-4 h-4" />
-              <span className="font-pixel text-xs">COMING SOON</span>
-            </div>
-          ) : (
-            <Link to={`/games/${type}`}>
-              <Button 
-                variant={color === "cyan" ? "neon" : color === "purple" ? "neon-purple" : color === "green" ? "neon-green" : "neon-pink"} 
-                size="sm" 
-                className="w-full gap-2"
-              >
-                <Play className="w-4 h-4" /> PLAY NOW
-              </Button>
-            </Link>
-          )}
+          <Link to={`/games/${type}`}>
+            <Button 
+              variant={color === "cyan" ? "neon" : color === "purple" ? "neon-purple" : color === "green" ? "neon-green" : "neon-pink"} 
+              size="sm" 
+              className="w-full gap-2"
+            >
+              <Play className="w-4 h-4" /> PLAY NOW
+            </Button>
+          </Link>
         </CardContent>
-
-        {/* Coming Soon Badge */}
-        {isComingSoon && (
-          <div className="absolute top-4 right-4">
-            <span className="px-2 py-1 text-[10px] font-pixel bg-muted text-muted-foreground rounded-full border border-border">
-              SOON
-            </span>
-          </div>
-        )}
       </Card>
     </motion.div>
   );

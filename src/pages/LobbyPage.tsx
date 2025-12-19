@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { GameCard } from "@/components/games/GameCard";
 import { 
   Users, 
   Trophy, 
@@ -10,8 +9,8 @@ import {
   Plus, 
   Search,
   Gamepad2,
-  Clock,
-  RefreshCw
+  RefreshCw,
+  Clock
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Link } from "react-router-dom";
