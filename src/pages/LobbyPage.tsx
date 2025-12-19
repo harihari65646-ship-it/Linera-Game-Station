@@ -143,23 +143,17 @@ export default function LobbyPage() {
                   {games.map((game) => (
                     <Link 
                       key={game.type} 
-                      to={game.isComingSoon ? "#" : `/games/${game.type}`}
-                      className={game.isComingSoon ? "cursor-not-allowed" : ""}
+                      to={`/games/${game.type}`}
                     >
                       <motion.div
-                        whileHover={{ scale: game.isComingSoon ? 1 : 1.05 }}
-                        whileTap={{ scale: game.isComingSoon ? 1 : 0.95 }}
-                        className={`p-4 rounded-lg bg-muted/30 border border-border hover:border-primary/30 transition-all text-center ${
-                          game.isComingSoon ? "opacity-50" : ""
-                        }`}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="p-4 rounded-lg bg-muted/30 border border-border hover:border-primary/30 transition-all text-center"
                       >
                         <div className={`mx-auto mb-2 text-neon-${game.color}`}>
                           {game.icon}
                         </div>
-                        <p className="font-pixel text-[10px] text-foreground">{game.title}</p>
-                        {game.isComingSoon && (
-                          <p className="text-[9px] text-muted-foreground mt-1">SOON</p>
-                        )}
+                        <p className="font-display text-[10px] text-foreground">{game.title}</p>
                       </motion.div>
                     </Link>
                   ))}

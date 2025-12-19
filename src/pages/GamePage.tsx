@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { SnakeGame } from "@/components/games/SnakeGame";
 import { TicTacToeGame } from "@/components/games/TicTacToeGame";
+import { SnakeLaddersGame } from "@/components/games/SnakeLaddersGame";
+import { UnoGame } from "@/components/games/UnoGame";
 import { 
   ArrowLeft, 
   Trophy, 
@@ -24,6 +26,18 @@ const gameInfo = {
     description: "The timeless game of X's and O's. Play against a friend or challenge the unbeatable AI!",
     color: "cyan",
     controls: ["Click to place your mark", "Get 3 in a row to win"],
+  },
+  snakeladders: {
+    title: "SNAKE & LADDERS",
+    description: "Roll the dice and race to 100! Climb ladders for shortcuts, but watch out for snakes that send you sliding back down.",
+    color: "purple",
+    controls: ["Click Roll Dice to move", "First to 100 wins"],
+  },
+  uno: {
+    title: "UNO",
+    description: "Match cards by color or number. Use action cards strategically and be the first to empty your hand!",
+    color: "pink",
+    controls: ["Click a card to play", "Draw if you can't play"],
   },
 };
 
@@ -83,6 +97,8 @@ export default function GamePage() {
               <CardContent className="p-6 md:p-8 flex items-center justify-center min-h-[500px]">
                 {gameType === "snake" && <SnakeGame />}
                 {gameType === "tictactoe" && <TicTacToeGame />}
+                {gameType === "snakeladders" && <SnakeLaddersGame />}
+                {gameType === "uno" && <UnoGame />}
               </CardContent>
             </Card>
           </motion.div>
