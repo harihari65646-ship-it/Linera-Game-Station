@@ -1,51 +1,29 @@
 /**
  * Linera Client Hook
  * 
- * This hook provides integration with the Linera blockchain for the Game Station.
- * It handles wallet connection, chain creation, and game operations.
+ * Provides integration with the Linera blockchain for the Game Station.
+ * Automatically falls back to demo mode if Linera SDK is not available.
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { 
+  lineraClient, 
+  initializeLinera, 
+  isLineraAvailable,
+  isDemoMode,
+  isLineraConfigured,
+  getLineraEnvInfo
+} from '@/lib/linera';
+import type { UserProfile, LeaderboardEntry, GameRoom } from '@/lib/linera';
 
-// Types for Linera integration
+// =============================================================================
+// TYPES
+// =============================================================================
+
 interface LineraWallet {
   address: string;
   chainId: string;
-}
-
-interface UserProfile {
-  username: string;
-  avatarId: number;
-  level: number;
-  xp: number;
-  snakeHighScore: number;
-  snakeGames: number;
-  snakeLaddersWins: number;
-  snakeLaddersLosses: number;
-  tictactoeWins: number;
-  tictactoeLosses: number;
-  unoWins: number;
-  unoLosses: number;
-}
-
-interface LeaderboardEntry {
-  rank: number;
-  playerName: string;
-  playerAddress: string;
-  score: number;
-  gamesPlayed: number;
-  winRate: number;
-  avatar: string;
-}
-
-interface GameRoom {
-  id: string;
-  game: string;
-  players: number;
-  maxPlayers: number;
-  fee: number;
-  host: string;
-  status: 'waiting' | 'playing' | 'finished';
+  isRealBlockchain: boolean;
 }
 
 interface UseLineraClientReturn {
@@ -54,6 +32,7 @@ interface UseLineraClientReturn {
   isConnecting: boolean;
   wallet: LineraWallet | null;
   error: string | null;
+  isDemoMode: boolean;
   
   // Actions
   connect: () => Promise<void>;
@@ -77,14 +56,12 @@ interface UseLineraClientReturn {
   getSnakeHighScore: (address?: string) => Promise<number>;
 }
 
-// Environment variables for Linera connection
-const FAUCET_URL = import.meta.env.VITE_FAUCET_URL || 'http://localhost:8080';
-const APP_ID = import.meta.env.VITE_LINERA_APP_ID || '';
+// =============================================================================
+// DEMO MODE HELPERS
+// =============================================================================
 
-// Avatar options
 const AVATARS = ['👑', '🎮', '⚡', '🔥', '🥷', '🏆', '💎', '🎨', '🌐', '🚀', '🎯', '💀'];
 
-// Generate deterministic data based on wallet for consistency
 function hashCode(str: string): number {
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
@@ -95,39 +72,123 @@ function hashCode(str: string): number {
   return Math.abs(hash);
 }
 
+// Demo data generators
+function generateDemoLeaderboard(gameType: string, limit: number): LeaderboardEntry[] {
+  const demoPlayers = [
+    { name: 'CryptoKing', score: 12847, games: 234, winRate: 78, avatar: '👑' },
+    { name: 'Web3Pro', score: 11293, games: 198, winRate: 72, avatar: '🎮' },
+    { name: 'BlockMaster', score: 10892, games: 312, winRate: 65, avatar: '⚡' },
+    { name: 'ChainGamer', score: 9847, games: 156, winRate: 69, avatar: '🔥' },
+    { name: 'PixelNinja', score: 8921, games: 287, winRate: 61, avatar: '🥷' },
+    { name: 'TokenChamp', score: 8456, games: 201, winRate: 58, avatar: '🏆' },
+    { name: 'DeFiGamer', score: 7892, games: 178, winRate: 55, avatar: '💎' },
+    { name: 'NFTPlayer', score: 7234, games: 245, winRate: 52, avatar: '🎨' },
+    { name: 'MetaGamer', score: 6891, games: 134, winRate: 60, avatar: '🌐' },
+    { name: 'ZeroLag', score: 6543, games: 167, winRate: 54, avatar: '⚡' },
+  ];
+
+  return demoPlayers.slice(0, limit).map((p, i) => ({
+    rank: i + 1,
+    playerName: p.name,
+    playerAddress: `0x${hashCode(p.name).toString(16).slice(0, 8)}...`,
+    score: p.score,
+    gamesPlayed: p.games,
+    winRate: p.winRate,
+    avatar: p.avatar,
+  }));
+}
+
+// =============================================================================
+// HOOK IMPLEMENTATION
+// =============================================================================
+
 export function useLineraClient(): UseLineraClientReturn {
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [wallet, setWallet] = useState<LineraWallet | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [usingDemoMode, setUsingDemoMode] = useState(true);
+  
+  const initAttempted = useRef(false);
 
   // Check for existing connection on mount
   useEffect(() => {
-    const savedWallet = localStorage.getItem('linera-wallet');
-    if (savedWallet) {
-      try {
-        const parsed = JSON.parse(savedWallet);
-        setWallet(parsed);
-        setIsConnected(true);
-      } catch {
-        localStorage.removeItem('linera-wallet');
+    const checkConnection = async () => {
+      // Only run once
+      if (initAttempted.current) return;
+      initAttempted.current = true;
+
+      // Log environment info
+      const envInfo = getLineraEnvInfo();
+      console.info('[useLineraClient] Environment:', envInfo);
+
+      // Check if Linera is configured
+      if (isLineraConfigured()) {
+        // Try to initialize real Linera
+        await initializeLinera();
+        if (isLineraAvailable() && lineraClient.isConnected) {
+          setWallet({
+            address: lineraClient.address,
+            chainId: lineraClient.address,
+            isRealBlockchain: true,
+          });
+          setIsConnected(true);
+          setUsingDemoMode(false);
+          return;
+        }
       }
-    }
+
+      // Fall back to demo mode - check localStorage
+      const savedWallet = localStorage.getItem('linera-wallet');
+      if (savedWallet) {
+        try {
+          const parsed = JSON.parse(savedWallet);
+          setWallet({ ...parsed, isRealBlockchain: false });
+          setIsConnected(true);
+          setUsingDemoMode(true);
+        } catch {
+          localStorage.removeItem('linera-wallet');
+        }
+      }
+    };
+
+    checkConnection();
   }, []);
 
   /**
-   * Connect to Linera network
+   * Connect to Linera network (or demo mode)
    */
   const connect = useCallback(async () => {
     setIsConnecting(true);
     setError(null);
 
     try {
-      // Production mode with real Linera client (when available)
-      // The @linera/client package would be used here in production
-      
-      // Demo mode: Create simulated wallet
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Try real Linera first if configured
+      if (isLineraConfigured()) {
+        await initializeLinera();
+        
+        if (isLineraAvailable()) {
+          const result = await lineraClient.connect();
+          
+          if (result.success) {
+            setWallet({
+              address: result.address,
+              chainId: result.address,
+              isRealBlockchain: true,
+            });
+            setIsConnected(true);
+            setUsingDemoMode(false);
+            setIsConnecting(false);
+            return;
+          } else {
+            console.warn('[useLineraClient] Real Linera connection failed:', result.error);
+          }
+        }
+      }
+
+      // Fall back to demo mode
+      console.info('[useLineraClient] Using demo mode');
+      await new Promise(resolve => setTimeout(resolve, 800));
 
       const mockAddress = `0x${Math.random().toString(16).slice(2, 10)}...${Math.random().toString(16).slice(2, 6)}`;
       const mockChainId = `chain-${Math.random().toString(36).slice(2, 10)}`;
@@ -135,13 +196,16 @@ export function useLineraClient(): UseLineraClientReturn {
       const newWallet: LineraWallet = {
         address: mockAddress,
         chainId: mockChainId,
+        isRealBlockchain: false,
       };
 
       setWallet(newWallet);
       setIsConnected(true);
+      setUsingDemoMode(true);
       localStorage.setItem('linera-wallet', JSON.stringify(newWallet));
+
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to connect to Linera';
+      const message = err instanceof Error ? err.message : 'Failed to connect';
       setError(message);
     } finally {
       setIsConnecting(false);
@@ -152,136 +216,138 @@ export function useLineraClient(): UseLineraClientReturn {
    * Disconnect from Linera network
    */
   const disconnect = useCallback(() => {
+    if (!usingDemoMode && lineraClient.isConnected) {
+      lineraClient.disconnect();
+    }
     setWallet(null);
     setIsConnected(false);
     localStorage.removeItem('linera-wallet');
-  }, []);
+  }, [usingDemoMode]);
 
-  /**
-   * Submit a Snake game score
-   */
+  // ===========================================================================
+  // GAME OPERATIONS (Real blockchain or demo mode)
+  // ===========================================================================
+
   const submitSnakeScore = useCallback(async (score: number): Promise<boolean> => {
     if (!isConnected || !wallet) return false;
 
-    try {
-      await new Promise(resolve => setTimeout(resolve, 300));
+    // Real blockchain
+    if (!usingDemoMode && lineraClient.isConnected) {
+      return lineraClient.submitSnakeScore(score);
+    }
 
+    // Demo mode
+    try {
+      await new Promise(resolve => setTimeout(resolve, 200));
       const storedScores = JSON.parse(localStorage.getItem('linera-snake-scores') || '{}');
       const currentHigh = storedScores[wallet.address] || 0;
       if (score > currentHigh) {
         storedScores[wallet.address] = score;
         localStorage.setItem('linera-snake-scores', JSON.stringify(storedScores));
       }
-
-      // Update games played
       const gamesPlayed = JSON.parse(localStorage.getItem('linera-games-played') || '{}');
       gamesPlayed[wallet.address] = (gamesPlayed[wallet.address] || 0) + 1;
       localStorage.setItem('linera-games-played', JSON.stringify(gamesPlayed));
-
       return true;
     } catch {
       return false;
     }
-  }, [isConnected, wallet]);
+  }, [isConnected, wallet, usingDemoMode]);
 
-  /**
-   * Submit a Tic-Tac-Toe game result
-   */
   const submitTicTacToeResult = useCallback(async (won: boolean): Promise<boolean> => {
     if (!isConnected || !wallet) return false;
 
-    try {
-      await new Promise(resolve => setTimeout(resolve, 300));
+    if (!usingDemoMode && lineraClient.isConnected) {
+      return lineraClient.submitTicTacToeResult(won);
+    }
 
+    try {
+      await new Promise(resolve => setTimeout(resolve, 200));
       const storedStats = JSON.parse(localStorage.getItem('linera-tictactoe-stats') || '{}');
       const stats = storedStats[wallet.address] || { wins: 0, losses: 0 };
-      if (won) stats.wins++;
-      else stats.losses++;
+      if (won) stats.wins++; else stats.losses++;
       storedStats[wallet.address] = stats;
       localStorage.setItem('linera-tictactoe-stats', JSON.stringify(storedStats));
-
       return true;
     } catch {
       return false;
     }
-  }, [isConnected, wallet]);
+  }, [isConnected, wallet, usingDemoMode]);
 
-  /**
-   * Submit Snake & Ladders result
-   */
   const submitSnakeLaddersResult = useCallback(async (won: boolean, position: number): Promise<boolean> => {
     if (!isConnected || !wallet) return false;
 
-    try {
-      await new Promise(resolve => setTimeout(resolve, 300));
+    if (!usingDemoMode && lineraClient.isConnected) {
+      return lineraClient.submitSnakeLaddersResult(won, position);
+    }
 
+    try {
+      await new Promise(resolve => setTimeout(resolve, 200));
       const storedStats = JSON.parse(localStorage.getItem('linera-snakeladders-stats') || '{}');
       const stats = storedStats[wallet.address] || { wins: 0, losses: 0, bestPosition: 4 };
-      if (won) stats.wins++;
-      else stats.losses++;
+      if (won) stats.wins++; else stats.losses++;
       if (position < stats.bestPosition) stats.bestPosition = position;
       storedStats[wallet.address] = stats;
       localStorage.setItem('linera-snakeladders-stats', JSON.stringify(storedStats));
-
       return true;
     } catch {
       return false;
     }
-  }, [isConnected, wallet]);
+  }, [isConnected, wallet, usingDemoMode]);
 
-  /**
-   * Submit UNO result
-   */
   const submitUnoResult = useCallback(async (won: boolean): Promise<boolean> => {
     if (!isConnected || !wallet) return false;
 
-    try {
-      await new Promise(resolve => setTimeout(resolve, 300));
+    if (!usingDemoMode && lineraClient.isConnected) {
+      return lineraClient.submitUnoResult(won);
+    }
 
+    try {
+      await new Promise(resolve => setTimeout(resolve, 200));
       const storedStats = JSON.parse(localStorage.getItem('linera-uno-stats') || '{}');
       const stats = storedStats[wallet.address] || { wins: 0, losses: 0 };
-      if (won) stats.wins++;
-      else stats.losses++;
+      if (won) stats.wins++; else stats.losses++;
       storedStats[wallet.address] = stats;
       localStorage.setItem('linera-uno-stats', JSON.stringify(storedStats));
-
       return true;
     } catch {
       return false;
     }
-  }, [isConnected, wallet]);
+  }, [isConnected, wallet, usingDemoMode]);
 
-  /**
-   * Update user profile
-   */
   const updateProfile = useCallback(async (username: string, avatarId: number): Promise<boolean> => {
     if (!isConnected || !wallet) return false;
 
-    try {
-      await new Promise(resolve => setTimeout(resolve, 300));
+    if (!usingDemoMode && lineraClient.isConnected) {
+      return lineraClient.updateProfile(username, avatarId);
+    }
 
+    try {
+      await new Promise(resolve => setTimeout(resolve, 200));
       const storedProfiles = JSON.parse(localStorage.getItem('linera-profiles') || '{}');
       storedProfiles[wallet.address] = { username, avatarId };
       localStorage.setItem('linera-profiles', JSON.stringify(storedProfiles));
-
       return true;
     } catch {
       return false;
     }
-  }, [isConnected, wallet]);
+  }, [isConnected, wallet, usingDemoMode]);
 
-  /**
-   * Create a game room
-   */
+  // ===========================================================================
+  // ROOM OPERATIONS
+  // ===========================================================================
+
   const createRoom = useCallback(async (gameType: string, maxPlayers: number, fee: number): Promise<string | null> => {
     if (!isConnected || !wallet) return null;
 
-    try {
-      await new Promise(resolve => setTimeout(resolve, 300));
+    if (!usingDemoMode && lineraClient.isConnected) {
+      return lineraClient.createRoom(gameType, maxPlayers, fee);
+    }
 
+    try {
+      await new Promise(resolve => setTimeout(resolve, 200));
       const roomId = `${gameType.slice(0, 3).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
       const storedRooms = JSON.parse(localStorage.getItem('linera-rooms') || '[]');
-      
       const profile = JSON.parse(localStorage.getItem('linera-profiles') || '{}')[wallet.address];
       
       storedRooms.push({
@@ -300,17 +366,17 @@ export function useLineraClient(): UseLineraClientReturn {
     } catch {
       return null;
     }
-  }, [isConnected, wallet]);
+  }, [isConnected, wallet, usingDemoMode]);
 
-  /**
-   * Join a game room
-   */
   const joinRoom = useCallback(async (roomId: string): Promise<boolean> => {
     if (!isConnected || !wallet) return false;
 
-    try {
-      await new Promise(resolve => setTimeout(resolve, 300));
+    if (!usingDemoMode && lineraClient.isConnected) {
+      return lineraClient.joinRoom(roomId);
+    }
 
+    try {
+      await new Promise(resolve => setTimeout(resolve, 200));
       const storedRooms = JSON.parse(localStorage.getItem('linera-rooms') || '[]');
       const roomIndex = storedRooms.findIndex((r: GameRoom) => r.id === roomId);
       
@@ -320,25 +386,22 @@ export function useLineraClient(): UseLineraClientReturn {
       if (room.players >= room.maxPlayers) return false;
       
       room.players++;
-      if (room.players >= room.maxPlayers) {
-        room.status = 'playing';
-      }
+      if (room.players >= room.maxPlayers) room.status = 'playing';
       
       localStorage.setItem('linera-rooms', JSON.stringify(storedRooms));
       return true;
     } catch {
       return false;
     }
-  }, [isConnected, wallet]);
+  }, [isConnected, wallet, usingDemoMode]);
 
-  /**
-   * Get active rooms
-   */
   const getActiveRooms = useCallback(async (gameType?: string): Promise<GameRoom[]> => {
+    if (!usingDemoMode && lineraClient.isConnected) {
+      return lineraClient.getActiveRooms(gameType);
+    }
+
     try {
       const storedRooms = JSON.parse(localStorage.getItem('linera-rooms') || '[]');
-      
-      // Filter out old rooms (older than 1 hour)
       const now = Date.now();
       const activeRooms = storedRooms.filter((r: any) => 
         now - r.createdAt < 3600000 && r.status !== 'finished'
@@ -347,17 +410,22 @@ export function useLineraClient(): UseLineraClientReturn {
       if (gameType && gameType !== 'all') {
         return activeRooms.filter((r: GameRoom) => r.game === gameType);
       }
-      
       return activeRooms;
     } catch {
       return [];
     }
-  }, []);
+  }, [usingDemoMode]);
 
-  /**
-   * Get leaderboard
-   */
+  // ===========================================================================
+  // QUERY OPERATIONS
+  // ===========================================================================
+
   const getLeaderboard = useCallback(async (gameType: string, limit: number = 10): Promise<LeaderboardEntry[]> => {
+    if (!usingDemoMode && lineraClient.isConnected) {
+      return lineraClient.getLeaderboard(gameType, limit);
+    }
+
+    // Demo mode - combine stored data with demo players
     try {
       const storedScores = JSON.parse(localStorage.getItem('linera-snake-scores') || '{}');
       const storedTTT = JSON.parse(localStorage.getItem('linera-tictactoe-stats') || '{}');
@@ -366,7 +434,6 @@ export function useLineraClient(): UseLineraClientReturn {
       const storedProfiles = JSON.parse(localStorage.getItem('linera-profiles') || '{}');
       const storedGames = JSON.parse(localStorage.getItem('linera-games-played') || '{}');
 
-      // Combine all players
       const allPlayers = new Set([
         ...Object.keys(storedScores),
         ...Object.keys(storedTTT),
@@ -374,7 +441,7 @@ export function useLineraClient(): UseLineraClientReturn {
         ...Object.keys(storedUno),
       ]);
 
-      const entries: LeaderboardEntry[] = Array.from(allPlayers).map((address, index) => {
+      const entries: LeaderboardEntry[] = Array.from(allPlayers).map((address) => {
         const profile = storedProfiles[address] || {};
         const snakeScore = storedScores[address] || 0;
         const tttStats = storedTTT[address] || { wins: 0, losses: 0 };
@@ -425,50 +492,27 @@ export function useLineraClient(): UseLineraClientReturn {
         };
       });
 
-      // Sort by score and assign ranks
       entries.sort((a, b) => b.score - a.score);
-      entries.forEach((entry, index) => {
-        entry.rank = index + 1;
-      });
+      entries.forEach((entry, index) => { entry.rank = index + 1; });
 
-      // If no real data, show seeded demo data
+      // If no real data, show demo leaderboard
       if (entries.length === 0) {
-        const demoPlayers = [
-          { name: 'CryptoKing', score: 12847, games: 234, winRate: 78, avatar: '👑' },
-          { name: 'Web3Pro', score: 11293, games: 198, winRate: 72, avatar: '🎮' },
-          { name: 'BlockMaster', score: 10892, games: 312, winRate: 65, avatar: '⚡' },
-          { name: 'ChainGamer', score: 9847, games: 156, winRate: 69, avatar: '🔥' },
-          { name: 'PixelNinja', score: 8921, games: 287, winRate: 61, avatar: '🥷' },
-          { name: 'TokenChamp', score: 8456, games: 201, winRate: 58, avatar: '🏆' },
-          { name: 'DeFiGamer', score: 7892, games: 178, winRate: 55, avatar: '💎' },
-          { name: 'NFTPlayer', score: 7234, games: 245, winRate: 52, avatar: '🎨' },
-          { name: 'MetaGamer', score: 6891, games: 134, winRate: 60, avatar: '🌐' },
-          { name: 'ZeroLag', score: 6543, games: 167, winRate: 54, avatar: '⚡' },
-        ];
-
-        return demoPlayers.slice(0, limit).map((p, i) => ({
-          rank: i + 1,
-          playerName: p.name,
-          playerAddress: `0x${hashCode(p.name).toString(16).slice(0, 8)}...`,
-          score: p.score,
-          gamesPlayed: p.games,
-          winRate: p.winRate,
-          avatar: p.avatar,
-        }));
+        return generateDemoLeaderboard(gameType, limit);
       }
 
       return entries.slice(0, limit);
     } catch {
-      return [];
+      return generateDemoLeaderboard(gameType, limit);
     }
-  }, []);
+  }, [usingDemoMode]);
 
-  /**
-   * Get user profile
-   */
   const getUserProfile = useCallback(async (address?: string): Promise<UserProfile | null> => {
     const targetAddress = address || wallet?.address;
     if (!targetAddress) return null;
+
+    if (!usingDemoMode && lineraClient.isConnected) {
+      return lineraClient.getUserProfile(targetAddress);
+    }
 
     try {
       const storedProfiles = JSON.parse(localStorage.getItem('linera-profiles') || '{}');
@@ -505,14 +549,15 @@ export function useLineraClient(): UseLineraClientReturn {
     } catch {
       return null;
     }
-  }, [wallet]);
+  }, [wallet, usingDemoMode]);
 
-  /**
-   * Get Snake high score
-   */
   const getSnakeHighScore = useCallback(async (address?: string): Promise<number> => {
     const targetAddress = address || wallet?.address;
     if (!targetAddress) return 0;
+
+    if (!usingDemoMode && lineraClient.isConnected) {
+      return lineraClient.getSnakeHighScore(targetAddress);
+    }
 
     try {
       const storedScores = JSON.parse(localStorage.getItem('linera-snake-scores') || '{}');
@@ -520,13 +565,14 @@ export function useLineraClient(): UseLineraClientReturn {
     } catch {
       return 0;
     }
-  }, [wallet]);
+  }, [wallet, usingDemoMode]);
 
   return {
     isConnected,
     isConnecting,
     wallet,
     error,
+    isDemoMode: usingDemoMode,
     connect,
     disconnect,
     submitSnakeScore,

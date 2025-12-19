@@ -1,50 +1,55 @@
 # 🎮 Linera Game Station
 
-**The Fastest Game Station in Web3** - Built for Linera Wave 6 Buildathon
-
-A decentralized arcade leveraging Linera's sub-0.5s finality for real-time gaming.
+**The Fastest Game Station in Web3** - Built on Linera blockchain
 
 ## 🎯 Features
-- **🐍 Snake** - Classic game with on-chain high scores
-- **⭕ Tic-Tac-Toe** - PvP & AI modes with instant finality
-- **Leaderboards** - Provably fair, on-chain rankings
-- **User Profiles** - XP progression and achievements
+- **4 Games**: Snake, Tic-Tac-Toe, Snake & Ladders, UNO
+- **On-Chain Leaderboards**: Provably fair rankings
+- **Real-Time Multiplayer**: Sub-0.5s finality
 
-## 🚀 Quick Start
-
+## 🚀 Quick Start (Demo Mode)
 ```bash
-# Using Docker (Recommended)
-docker compose up --force-recreate
-
-# Access at http://localhost:5173
+npm install && npm run dev
 ```
 
-## 🔧 Linera SDK Features
-| Feature | Usage |
-|---------|-------|
-| Microchains | Per-user game state |
-| MapView | Leaderboards, profiles |
-| GraphQL Service | Efficient queries |
-| Cross-chain Messages | Multiplayer sync |
+## 🔗 Production Deployment (Real Blockchain)
+
+### 1. Deploy Smart Contracts
+```bash
+cd contracts/game-station
+cargo build --release --target wasm32-unknown-unknown
+linera project publish-and-create --faucet https://faucet.testnet-conway.linera.net
+# Save the returned Application ID!
+```
+
+### 2. Install Linera Client
+```bash
+npm install @linera/client
+```
+
+### 3. Configure Environment
+Create `.env`:
+```env
+VITE_LINERA_FAUCET_URL=https://faucet.testnet-conway.linera.net
+VITE_LINERA_APP_ID=your_application_id_here
+```
+
+### 4. Run
+```bash
+npm run dev
+```
 
 ## 📁 Structure
 ```
 ├── contracts/game-station/  # Linera Rust contracts
-├── src/                     # React frontend
-├── Dockerfile              # Buildathon template
-├── compose.yaml
-└── run.bash
+├── src/lib/linera/          # SDK integration
+├── src/hooks/               # React hooks
+└── src/pages/               # App pages
 ```
 
-## 👥 Team
-- **[Your Name]** - Discord: @yourname
-- **Wallet**: 0x...
-
-## 📜 Wave 6 Changelog
-- ✨ Snake & Tic-Tac-Toe games
-- ✨ Linera smart contracts
-- ✨ Leaderboard system
-- ✨ Docker buildathon template
+## 📖 Resources
+- [Linera Docs](https://linera.dev)
+- [Frontend Guide](https://linera.dev/developers/frontend/setup.html)
 
 ---
 *"Where Nostalgia Meets Web3 Speed"*
