@@ -1,73 +1,50 @@
-# Welcome to your Lovable project
+# 🎮 Linera Game Station
 
-## Project info
+**The Fastest Game Station in Web3** - Built for Linera Wave 6 Buildathon
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+A decentralized arcade leveraging Linera's sub-0.5s finality for real-time gaming.
 
-## How can I edit this code?
+## 🎯 Features
+- **🐍 Snake** - Classic game with on-chain high scores
+- **⭕ Tic-Tac-Toe** - PvP & AI modes with instant finality
+- **Leaderboards** - Provably fair, on-chain rankings
+- **User Profiles** - XP progression and achievements
 
-There are several ways of editing your application.
+## 🚀 Quick Start
 
-**Use Lovable**
+```bash
+# Using Docker (Recommended)
+docker compose up --force-recreate
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+# Access at http://localhost:5173
 ```
 
-**Edit a file directly in GitHub**
+## 🔧 Linera SDK Features
+| Feature | Usage |
+|---------|-------|
+| Microchains | Per-user game state |
+| MapView | Leaderboards, profiles |
+| GraphQL Service | Efficient queries |
+| Cross-chain Messages | Multiplayer sync |
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## 📁 Structure
+```
+├── contracts/game-station/  # Linera Rust contracts
+├── src/                     # React frontend
+├── Dockerfile              # Buildathon template
+├── compose.yaml
+└── run.bash
+```
 
-**Use GitHub Codespaces**
+## 👥 Team
+- **[Your Name]** - Discord: @yourname
+- **Wallet**: 0x...
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## 📜 Wave 6 Changelog
+- ✨ Snake & Tic-Tac-Toe games
+- ✨ Linera smart contracts
+- ✨ Leaderboard system
+- ✨ Docker buildathon template
 
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+---
+*"Where Nostalgia Meets Web3 Speed"*

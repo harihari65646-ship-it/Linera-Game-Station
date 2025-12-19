@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { useLineraClient } from "@/hooks/useLineraClient";
 import { 
   Gamepad2, 
   Trophy, 
@@ -9,7 +10,9 @@ import {
   Wallet, 
   Menu, 
   X,
-  Zap 
+  Zap,
+  LogOut,
+  Loader2
 } from "lucide-react";
 
 const navLinks = [
@@ -22,6 +25,7 @@ const navLinks = [
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
+  const { isConnected, isConnecting, wallet, connect, disconnect } = useLineraClient();
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border/50">
@@ -77,10 +81,19 @@ export function Navbar() {
 
           {/* Wallet Connect */}
           <div className="flex items-center gap-2">
-            <Button variant="neon" size="sm" className="hidden sm:flex gap-2">
-              <Wallet className="w-4 h-4" />
-              Connect
-            </Button>
+            {isConnected ? (
+              <div className="hidden sm:flex items-center gap-2">
+                <span className="text-xs text-neon-green font-mono">{wallet?.address}</span>
+                <Button variant="ghost" size="sm" onClick={disconnect}>
+                  <LogOut className="w-4 h-4" />
+                </Button>
+              </div>
+            ) : (
+              <Button variant="neon" size="sm" className="hidden sm:flex gap-2" onClick={connect} disabled={isConnecting}>
+                {isConnecting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wallet className="w-4 h-4" />}
+                {isConnecting ? "Connecting..." : "Connect"}
+              </Button>
+            )}
 
             {/* Mobile Menu Toggle */}
             <Button
@@ -121,10 +134,17 @@ export function Navbar() {
               );
             })}
             <div className="pt-2">
-              <Button variant="neon" className="w-full gap-2">
-                <Wallet className="w-4 h-4" />
-                Connect Wallet
-              </Button>
+              {isConnected ? (
+                <Button variant="ghost" className="w-full gap-2" onClick={disconnect}>
+                  <LogOut className="w-4 h-4" />
+                  Disconnect ({wallet?.address})
+                </Button>
+              ) : (
+                <Button variant="neon" className="w-full gap-2" onClick={connect} disabled={isConnecting}>
+                  {isConnecting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wallet className="w-4 h-4" />}
+                  {isConnecting ? "Connecting..." : "Connect Wallet"}
+                </Button>
+              )}
             </div>
           </div>
         </motion.div>
