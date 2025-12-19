@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,38 +9,51 @@ import {
   TrendingUp,
   TrendingDown,
   Minus,
-  Filter
+  RefreshCw
 } from "lucide-react";
+import { useLineraClient } from "@/hooks/useLineraClient";
 
 type TimeFilter = "daily" | "weekly" | "alltime";
-type GameFilter = "all" | "snake" | "tictactoe";
+type GameFilter = "all" | "snake" | "tictactoe" | "snakeladders" | "uno";
 
-const mockLeaderboard = [
-  { rank: 1, name: "CryptoKing", score: 12847, games: 234, winRate: 78, trend: "up", avatar: "👑" },
-  { rank: 2, name: "Web3Pro", score: 11293, games: 198, winRate: 72, trend: "down", avatar: "🎮" },
-  { rank: 3, name: "BlockMaster", score: 10892, games: 312, winRate: 65, trend: "up", avatar: "⚡" },
-  { rank: 4, name: "ChainGamer", score: 9847, games: 156, winRate: 69, trend: "same", avatar: "🔥" },
-  { rank: 5, name: "PixelNinja", score: 8921, games: 287, winRate: 61, trend: "up", avatar: "🥷" },
-  { rank: 6, name: "TokenChamp", score: 8456, games: 201, winRate: 58, trend: "down", avatar: "🏆" },
-  { rank: 7, name: "DeFiGamer", score: 7892, games: 178, winRate: 55, trend: "up", avatar: "💎" },
-  { rank: 8, name: "NFTPlayer", score: 7234, games: 245, winRate: 52, trend: "same", avatar: "🎨" },
-  { rank: 9, name: "MetaGamer", score: 6891, games: 134, winRate: 60, trend: "up", avatar: "🌐" },
-  { rank: 10, name: "ZeroLag", score: 6543, games: 167, winRate: 54, trend: "down", avatar: "⚡" },
-];
+interface LeaderboardPlayer {
+  rank: number;
+  playerName: string;
+  playerAddress: string;
+  score: number;
+  gamesPlayed: number;
+  winRate: number;
+  avatar: string;
+}
 
 export default function LeaderboardPage() {
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("weekly");
   const [gameFilter, setGameFilter] = useState<GameFilter>("all");
+  const [leaderboard, setLeaderboard] = useState<LeaderboardPlayer[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  const { getLeaderboard } = useLineraClient();
 
-  const getTrendIcon = (trend: string) => {
-    switch (trend) {
-      case "up":
-        return <TrendingUp className="w-4 h-4 text-neon-green" />;
-      case "down":
-        return <TrendingDown className="w-4 h-4 text-neon-pink" />;
-      default:
-        return <Minus className="w-4 h-4 text-muted-foreground" />;
+  useEffect(() => {
+    loadLeaderboard();
+  }, [gameFilter, timeFilter]);
+
+  const loadLeaderboard = async () => {
+    setIsLoading(true);
+    try {
+      const data = await getLeaderboard(gameFilter, 10);
+      setLeaderboard(data);
+    } catch (err) {
+      setLeaderboard([]);
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  const getTrendIcon = (winRate: number) => {
+    if (winRate >= 60) return <TrendingUp className="w-4 h-4 text-neon-green" />;
+    if (winRate <= 40) return <TrendingDown className="w-4 h-4 text-neon-pink" />;
+    return <Minus className="w-4 h-4 text-muted-foreground" />;
   };
 
   const getRankStyle = (rank: number) => {
@@ -81,7 +94,7 @@ export default function LeaderboardPage() {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-yellow-500/20 to-orange-500/20 border border-yellow-500/30 mb-4">
             <Trophy className="w-8 h-8 text-yellow-500" />
           </div>
-          <h1 className="font-pixel text-xl md:text-2xl text-foreground mb-2">
+          <h1 className="font-display text-xl md:text-2xl text-foreground mb-2">
             LEADER<span className="text-neon-yellow">BOARD</span>
           </h1>
           <p className="text-muted-foreground">
@@ -119,13 +132,13 @@ export default function LeaderboardPage() {
               All Time
             </Button>
           </div>
-          <div className="flex items-center gap-2 p-1 rounded-lg bg-muted/30 border border-border">
+          <div className="flex items-center gap-2 p-1 rounded-lg bg-muted/30 border border-border flex-wrap justify-center">
             <Button
               variant={gameFilter === "all" ? "neon-purple" : "ghost"}
               size="sm"
               onClick={() => setGameFilter("all")}
             >
-              All Games
+              All
             </Button>
             <Button
               variant={gameFilter === "snake" ? "neon-green" : "ghost"}
@@ -141,52 +154,71 @@ export default function LeaderboardPage() {
             >
               Tic-Tac-Toe
             </Button>
+            <Button
+              variant={gameFilter === "snakeladders" ? "neon-purple" : "ghost"}
+              size="sm"
+              onClick={() => setGameFilter("snakeladders")}
+            >
+              S&L
+            </Button>
+            <Button
+              variant={gameFilter === "uno" ? "neon-pink" : "ghost"}
+              size="sm"
+              onClick={() => setGameFilter("uno")}
+            >
+              UNO
+            </Button>
           </div>
+          <Button variant="ghost" size="icon" onClick={loadLeaderboard}>
+            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+          </Button>
         </motion.div>
 
         {/* Top 3 Podium */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.2 }}
-          className="grid grid-cols-3 gap-4 mb-8"
-        >
-          {/* Second Place */}
-          <div className="mt-8">
-            <Card variant="arcade" className="text-center p-4 border-gray-400/30">
-              <div className="text-4xl mb-2">{mockLeaderboard[1].avatar}</div>
-              <Medal className="w-8 h-8 mx-auto text-gray-400 mb-2" />
-              <p className="font-pixel text-xs text-gray-400">#2</p>
-              <p className="font-medium text-sm truncate">{mockLeaderboard[1].name}</p>
-              <p className="font-mono text-lg text-gray-400">{mockLeaderboard[1].score.toLocaleString()}</p>
-            </Card>
-          </div>
+        {leaderboard.length >= 3 && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.2 }}
+            className="grid grid-cols-3 gap-4 mb-8"
+          >
+            {/* Second Place */}
+            <div className="mt-8">
+              <Card variant="arcade" className="text-center p-4 border-gray-400/30">
+                <div className="text-4xl mb-2">{leaderboard[1]?.avatar}</div>
+                <Medal className="w-8 h-8 mx-auto text-gray-400 mb-2" />
+                <p className="font-display text-xs text-gray-400">#2</p>
+                <p className="font-medium text-sm truncate">{leaderboard[1]?.playerName}</p>
+                <p className="font-mono text-lg text-gray-400">{leaderboard[1]?.score.toLocaleString()}</p>
+              </Card>
+            </div>
 
-          {/* First Place */}
-          <div>
-            <Card variant="arcade" className="text-center p-4 border-yellow-500/30 relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-b from-yellow-500/10 to-transparent" />
-              <div className="relative z-10">
-                <div className="text-5xl mb-2">{mockLeaderboard[0].avatar}</div>
-                <Crown className="w-10 h-10 mx-auto text-yellow-500 mb-2" />
-                <p className="font-pixel text-sm text-yellow-500">#1</p>
-                <p className="font-medium truncate">{mockLeaderboard[0].name}</p>
-                <p className="font-mono text-xl text-yellow-500">{mockLeaderboard[0].score.toLocaleString()}</p>
-              </div>
-            </Card>
-          </div>
+            {/* First Place */}
+            <div>
+              <Card variant="arcade" className="text-center p-4 border-yellow-500/30 relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-b from-yellow-500/10 to-transparent" />
+                <div className="relative z-10">
+                  <div className="text-5xl mb-2">{leaderboard[0]?.avatar}</div>
+                  <Crown className="w-10 h-10 mx-auto text-yellow-500 mb-2" />
+                  <p className="font-display text-sm text-yellow-500">#1</p>
+                  <p className="font-medium truncate">{leaderboard[0]?.playerName}</p>
+                  <p className="font-mono text-xl text-yellow-500">{leaderboard[0]?.score.toLocaleString()}</p>
+                </div>
+              </Card>
+            </div>
 
-          {/* Third Place */}
-          <div className="mt-12">
-            <Card variant="arcade" className="text-center p-4 border-orange-600/30">
-              <div className="text-3xl mb-2">{mockLeaderboard[2].avatar}</div>
-              <Medal className="w-6 h-6 mx-auto text-orange-600 mb-2" />
-              <p className="font-pixel text-xs text-orange-600">#3</p>
-              <p className="font-medium text-sm truncate">{mockLeaderboard[2].name}</p>
-              <p className="font-mono text-lg text-orange-600">{mockLeaderboard[2].score.toLocaleString()}</p>
-            </Card>
-          </div>
-        </motion.div>
+            {/* Third Place */}
+            <div className="mt-12">
+              <Card variant="arcade" className="text-center p-4 border-orange-600/30">
+                <div className="text-3xl mb-2">{leaderboard[2]?.avatar}</div>
+                <Medal className="w-6 h-6 mx-auto text-orange-600 mb-2" />
+                <p className="font-display text-xs text-orange-600">#3</p>
+                <p className="font-medium text-sm truncate">{leaderboard[2]?.playerName}</p>
+                <p className="font-mono text-lg text-orange-600">{leaderboard[2]?.score.toLocaleString()}</p>
+              </Card>
+            </div>
+          </motion.div>
+        )}
 
         {/* Full Leaderboard */}
         <motion.div
@@ -213,50 +245,60 @@ export default function LeaderboardPage() {
               </div>
 
               {/* Leaderboard Rows */}
-              <div className="space-y-2">
-                {mockLeaderboard.map((player, index) => (
-                  <motion.div
-                    key={player.rank}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.05 * index }}
-                    className={`grid grid-cols-12 gap-4 items-center px-4 py-3 rounded-lg border transition-colors hover:border-primary/30 ${getRankStyle(player.rank)}`}
-                  >
-                    <div className="col-span-1 flex items-center justify-center">
-                      {getRankIcon(player.rank) || (
-                        <span className="font-pixel text-sm text-muted-foreground">
-                          #{player.rank}
+              {isLoading ? (
+                <div className="space-y-2">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className="h-16 rounded-lg bg-muted/20 animate-pulse" />
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {leaderboard.map((player, index) => (
+                    <motion.div
+                      key={player.rank}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.05 * index }}
+                      className={`grid grid-cols-12 gap-4 items-center px-4 py-3 rounded-lg border transition-colors hover:border-primary/30 ${getRankStyle(player.rank)}`}
+                    >
+                      <div className="col-span-1 flex items-center justify-center">
+                        {getRankIcon(player.rank) || (
+                          <span className="font-display text-sm text-muted-foreground">
+                            #{player.rank}
+                          </span>
+                        )}
+                      </div>
+                      <div className="col-span-4 flex items-center gap-3">
+                        <span className="text-2xl">{player.avatar}</span>
+                        <span className="font-medium truncate">{player.playerName}</span>
+                      </div>
+                      <div className="col-span-2 text-right">
+                        <span className="font-mono text-primary">{player.score.toLocaleString()}</span>
+                      </div>
+                      <div className="col-span-2 text-right hidden sm:block">
+                        <span className="text-muted-foreground">{player.gamesPlayed}</span>
+                      </div>
+                      <div className="col-span-2 text-right hidden sm:block">
+                        <span className={player.winRate >= 60 ? "text-neon-green" : "text-muted-foreground"}>
+                          {player.winRate}%
                         </span>
-                      )}
-                    </div>
-                    <div className="col-span-4 flex items-center gap-3">
-                      <span className="text-2xl">{player.avatar}</span>
-                      <span className="font-medium truncate">{player.name}</span>
-                    </div>
-                    <div className="col-span-2 text-right">
-                      <span className="font-mono text-primary">{player.score.toLocaleString()}</span>
-                    </div>
-                    <div className="col-span-2 text-right hidden sm:block">
-                      <span className="text-muted-foreground">{player.games}</span>
-                    </div>
-                    <div className="col-span-2 text-right hidden sm:block">
-                      <span className={player.winRate >= 60 ? "text-neon-green" : "text-muted-foreground"}>
-                        {player.winRate}%
-                      </span>
-                    </div>
-                    <div className="col-span-1 flex justify-end">
-                      {getTrendIcon(player.trend)}
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
+                      </div>
+                      <div className="col-span-1 flex justify-end">
+                        {getTrendIcon(player.winRate)}
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
 
-              {/* Load More */}
-              <div className="text-center mt-6">
-                <Button variant="outline" className="gap-2">
-                  Load More Rankings
-                </Button>
-              </div>
+              {/* Empty State */}
+              {!isLoading && leaderboard.length === 0 && (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Trophy className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p>No players yet</p>
+                  <p className="text-sm">Be the first to claim the top spot!</p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </motion.div>

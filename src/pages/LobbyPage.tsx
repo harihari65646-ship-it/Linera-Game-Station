@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,14 +8,14 @@ import {
   Trophy, 
   Zap, 
   Plus, 
-  Filter,
   Search,
   Gamepad2,
   Clock,
-  Coins
+  RefreshCw
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Link } from "react-router-dom";
+import { useLineraClient } from "@/hooks/useLineraClient";
 
 // Game icons
 const SnakeIcon = () => (
@@ -83,23 +83,63 @@ const games = [
   },
 ];
 
-const mockRooms = [
-  { id: "SNK-4821", game: "snake", players: 1, maxPlayers: 1, fee: 0, host: "CryptoNinja", status: "waiting" },
-  { id: "TTT-7293", game: "tictactoe", players: 1, maxPlayers: 2, fee: 10, host: "BlockMaster", status: "waiting" },
-  { id: "TTT-1842", game: "tictactoe", players: 2, maxPlayers: 2, fee: 50, host: "Web3Gamer", status: "playing" },
-  { id: "SNK-9921", game: "snake", players: 1, maxPlayers: 1, fee: 0, host: "PixelKing", status: "playing" },
-];
+interface GameRoom {
+  id: string;
+  game: string;
+  players: number;
+  maxPlayers: number;
+  fee: number;
+  host: string;
+  status: 'waiting' | 'playing' | 'finished';
+}
 
 export default function LobbyPage() {
   const [filter, setFilter] = useState<GameFilter>("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [rooms, setRooms] = useState<GameRoom[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  const { isConnected, getActiveRooms, joinRoom, getLeaderboard, wallet } = useLineraClient();
 
-  const filteredRooms = mockRooms.filter(room => {
-    if (filter !== "all" && room.game !== filter) return false;
+  useEffect(() => {
+    loadRooms();
+  }, [filter]);
+
+  const loadRooms = async () => {
+    setIsLoading(true);
+    try {
+      const activeRooms = await getActiveRooms(filter === 'all' ? undefined : filter);
+      setRooms(activeRooms);
+    } catch {
+      setRooms([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const filteredRooms = rooms.filter(room => {
     if (searchQuery && !room.id.toLowerCase().includes(searchQuery.toLowerCase()) && 
         !room.host.toLowerCase().includes(searchQuery.toLowerCase())) return false;
     return true;
   });
+
+  const handleJoinRoom = async (roomId: string) => {
+    const success = await joinRoom(roomId);
+    if (success) {
+      loadRooms();
+    }
+  };
+
+  const [topPlayers, setTopPlayers] = useState<any[]>([]);
+  
+  useEffect(() => {
+    loadTopPlayers();
+  }, []);
+
+  const loadTopPlayers = async () => {
+    const players = await getLeaderboard('all', 5);
+    setTopPlayers(players);
+  };
 
   return (
     <div className="min-h-screen pt-24 pb-12 px-4">
@@ -107,8 +147,8 @@ export default function LobbyPage() {
         {/* Header */}
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-8">
           <div>
-            <h1 className="font-pixel text-xl md:text-2xl text-foreground mb-2">
-              GAME <span className="text-neon-cyan">LOBBY</span>
+            <h1 className="font-display text-xl md:text-2xl text-foreground mb-2">
+              GAME <span className="text-glow-cyan">LOBBY</span>
             </h1>
             <p className="text-muted-foreground">
               Join a room or create your own
@@ -121,7 +161,7 @@ export default function LobbyPage() {
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-neon-green" />
               </div>
               <span className="text-muted-foreground">
-                <span className="text-foreground font-medium">231</span> players online
+                <span className="text-foreground font-medium">{231 + rooms.length}</span> players online
               </span>
             </div>
           </div>
@@ -169,9 +209,14 @@ export default function LobbyPage() {
                     <Users className="w-4 h-4 text-primary" />
                     ACTIVE ROOMS
                   </CardTitle>
-                  <Button variant="neon" size="sm" className="gap-1">
-                    <Plus className="w-4 h-4" /> Create Room
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button variant="ghost" size="icon" onClick={loadRooms}>
+                      <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+                    </Button>
+                    <Button variant="neon" size="sm" className="gap-1">
+                      <Plus className="w-4 h-4" /> Create Room
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
@@ -206,66 +251,95 @@ export default function LobbyPage() {
                       size="sm"
                       onClick={() => setFilter("tictactoe")}
                     >
-                      Tic-Tac-Toe
+                      TTT
+                    </Button>
+                    <Button
+                      variant={filter === "snakeladders" ? "neon-purple" : "ghost"}
+                      size="sm"
+                      onClick={() => setFilter("snakeladders")}
+                    >
+                      S&L
+                    </Button>
+                    <Button
+                      variant={filter === "uno" ? "neon-pink" : "ghost"}
+                      size="sm"
+                      onClick={() => setFilter("uno")}
+                    >
+                      UNO
                     </Button>
                   </div>
                 </div>
 
                 {/* Room List */}
                 <div className="space-y-3">
-                  <AnimatePresence mode="popLayout">
-                    {filteredRooms.map((room) => (
-                      <motion.div
-                        key={room.id}
-                        layout
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className="flex items-center justify-between p-4 rounded-lg bg-muted/20 border border-border hover:border-primary/30 transition-colors"
-                      >
-                        <div className="flex items-center gap-4">
-                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                            room.game === "snake" ? "bg-accent/20 text-accent" : "bg-primary/20 text-primary"
-                          }`}>
-                            {room.game === "snake" ? <SnakeIcon /> : <TicTacToeIcon />}
+                  {isLoading ? (
+                    <div className="space-y-3">
+                      {[...Array(3)].map((_, i) => (
+                        <div key={i} className="h-20 rounded-lg bg-muted/20 animate-pulse" />
+                      ))}
+                    </div>
+                  ) : (
+                    <AnimatePresence mode="popLayout">
+                      {filteredRooms.map((room) => (
+                        <motion.div
+                          key={room.id}
+                          layout
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          className="flex items-center justify-between p-4 rounded-lg bg-muted/20 border border-border hover:border-primary/30 transition-colors"
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                              room.game === "snake" ? "bg-accent/20 text-accent" : 
+                              room.game === "snakeladders" ? "bg-secondary/20 text-secondary" :
+                              room.game === "uno" ? "bg-destructive/20 text-destructive" :
+                              "bg-primary/20 text-primary"
+                            }`}>
+                              {room.game === "snake" ? <SnakeIcon /> : 
+                               room.game === "snakeladders" ? <DiceIcon /> :
+                               room.game === "uno" ? <UnoIcon /> :
+                               <TicTacToeIcon />}
+                            </div>
+                            <div>
+                              <p className="font-mono text-sm text-foreground">{room.id}</p>
+                              <p className="text-xs text-muted-foreground">
+                                Host: <span className="text-primary">{room.host}</span>
+                              </p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="font-mono text-sm text-foreground">{room.id}</p>
-                            <p className="text-xs text-muted-foreground">
-                              Host: <span className="text-primary">{room.host}</span>
-                            </p>
+                          <div className="flex items-center gap-4">
+                            <div className="text-right hidden sm:block">
+                              <p className="text-sm text-foreground">
+                                {room.players}/{room.maxPlayers} <Users className="inline w-3 h-3" />
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {room.fee > 0 ? (
+                                  <span className="text-neon-yellow">{room.fee} tokens</span>
+                                ) : (
+                                  <span className="text-neon-green">FREE</span>
+                                )}
+                              </p>
+                            </div>
+                            <Button
+                              variant={room.status === "waiting" ? "neon" : "outline"}
+                              size="sm"
+                              disabled={room.status === "playing" || room.players >= room.maxPlayers}
+                              onClick={() => handleJoinRoom(room.id)}
+                            >
+                              {room.status === "playing" ? "In Progress" : "Join"}
+                            </Button>
                           </div>
-                        </div>
-                        <div className="flex items-center gap-4">
-                          <div className="text-right hidden sm:block">
-                            <p className="text-sm text-foreground">
-                              {room.players}/{room.maxPlayers} <Users className="inline w-3 h-3" />
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {room.fee > 0 ? (
-                                <span className="text-neon-yellow">{room.fee} tokens</span>
-                              ) : (
-                                <span className="text-neon-green">FREE</span>
-                              )}
-                            </p>
-                          </div>
-                          <Button
-                            variant={room.status === "waiting" ? "neon" : "outline"}
-                            size="sm"
-                            disabled={room.status === "playing" || room.players >= room.maxPlayers}
-                          >
-                            {room.status === "playing" ? "In Progress" : "Join"}
-                          </Button>
-                        </div>
-                      </motion.div>
-                    ))}
-                  </AnimatePresence>
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
+                  )}
 
-                  {filteredRooms.length === 0 && (
+                  {!isLoading && filteredRooms.length === 0 && (
                     <div className="text-center py-12 text-muted-foreground">
                       <Gamepad2 className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                      <p>No rooms found</p>
-                      <p className="text-sm">Create one or adjust your filters</p>
+                      <p>No active rooms</p>
+                      <p className="text-sm">Create one or play a quick game!</p>
                     </div>
                   )}
                 </div>
@@ -284,15 +358,27 @@ export default function LobbyPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="text-center p-4 rounded-lg bg-muted/30">
-                  <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-2xl font-bold text-primary-foreground">
-                    ?
+                {isConnected ? (
+                  <div className="text-center p-4 rounded-lg bg-muted/30">
+                    <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-2xl">
+                      {wallet?.address.slice(2, 4)}
+                    </div>
+                    <p className="font-display text-xs text-foreground mb-1">Connected</p>
+                    <p className="font-mono text-xs text-muted-foreground">{wallet?.address}</p>
                   </div>
-                  <p className="font-pixel text-xs text-muted-foreground">CONNECT WALLET</p>
-                </div>
-                <Button variant="arcade" className="w-full">
-                  Connect & Play
-                </Button>
+                ) : (
+                  <div className="text-center p-4 rounded-lg bg-muted/30">
+                    <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-2xl font-bold text-primary-foreground">
+                      ?
+                    </div>
+                    <p className="font-display text-xs text-muted-foreground">CONNECT WALLET</p>
+                  </div>
+                )}
+                <Link to="/profile">
+                  <Button variant="arcade" className="w-full">
+                    {isConnected ? 'View Profile' : 'Connect & Play'}
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
 
@@ -312,18 +398,12 @@ export default function LobbyPage() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
-                {[
-                  { rank: 1, name: "CryptoKing", score: 12847, trend: "+2" },
-                  { rank: 2, name: "Web3Pro", score: 11293, trend: "-1" },
-                  { rank: 3, name: "BlockMaster", score: 10892, trend: "+1" },
-                  { rank: 4, name: "ChainGamer", score: 9847, trend: "0" },
-                  { rank: 5, name: "PixelNinja", score: 8921, trend: "+3" },
-                ].map((player) => (
+                {topPlayers.length > 0 ? topPlayers.map((player) => (
                   <div
                     key={player.rank}
                     className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/30 transition-colors"
                   >
-                    <span className={`font-pixel text-sm w-6 ${
+                    <span className={`font-display text-sm w-6 ${
                       player.rank === 1 ? "text-neon-yellow" :
                       player.rank === 2 ? "text-muted-foreground" :
                       player.rank === 3 ? "text-neon-orange" :
@@ -331,12 +411,17 @@ export default function LobbyPage() {
                     }`}>
                       #{player.rank}
                     </span>
+                    <span className="text-lg">{player.avatar}</span>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{player.name}</p>
+                      <p className="text-sm font-medium truncate">{player.playerName}</p>
                     </div>
                     <span className="font-mono text-xs text-primary">{player.score.toLocaleString()}</span>
                   </div>
-                ))}
+                )) : (
+                  <p className="text-center text-sm text-muted-foreground py-4">
+                    No players yet
+                  </p>
+                )}
               </CardContent>
             </Card>
 
@@ -352,7 +437,7 @@ export default function LobbyPage() {
                 {[
                   { game: "Snake", result: "Win", score: 247, time: "2m ago" },
                   { game: "Tic-Tac-Toe", result: "Win", score: 100, time: "5m ago" },
-                  { game: "Snake", result: "Loss", score: 89, time: "12m ago" },
+                  { game: "UNO", result: "Loss", score: 0, time: "12m ago" },
                 ].map((activity, i) => (
                   <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-muted/20">
                     <div>
@@ -360,7 +445,7 @@ export default function LobbyPage() {
                       <p className="text-xs text-muted-foreground">{activity.time}</p>
                     </div>
                     <div className="text-right">
-                      <p className={`text-xs font-pixel ${
+                      <p className={`text-xs font-display ${
                         activity.result === "Win" ? "text-neon-green" : "text-neon-pink"
                       }`}>
                         {activity.result}
