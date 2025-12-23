@@ -226,14 +226,7 @@ This proves the frontend is connected to a **real Linera node**, not mocked data
 
 ---
 
-## 📸 Screenshots
 
-*Add screenshots here showing:*
-1. Landing page with neon UI
-2. Tic-Tac-Toe gameplay
-3. Multiplayer lobby
-4. Blockchain activity indicator
-5. Leaderboard
 
 ---
 
@@ -249,22 +242,7 @@ This proves the frontend is connected to a **real Linera node**, not mocked data
 
 ---
 
-## 🗺️ Roadmap
 
-### Wave 5 (Current)
-- [x] Local Linera network integration
-- [x] Game-station contract deployment
-- [x] Real-time GraphQL queries
-- [x] Professional arcade UI
-- [ ] Conway Testnet deployment
-- [ ] Full wallet authentication
-
-### Wave 6+
-- [ ] Token wagering system
-- [ ] Tournament brackets
-- [ ] NFT achievements
-- [ ] AI matchmaking
-- [ ] Mobile-optimized UI
 
 ### Future Vision
 - Cross-chain tournaments with microchain isolation
@@ -296,12 +274,7 @@ This proves the frontend is connected to a **real Linera node**, not mocked data
 
 ---
 
-## 🔗 Links
 
-- **Demo:** [Live Demo URL]
-- **Video:** [YouTube Demo Link]
-- **GitHub:** [This Repository]
-- **Linera Docs:** [linera.dev](https://linera.dev)
 
 ---
 
@@ -314,8 +287,6 @@ MIT License - See LICENSE file
 ## 🙏 Acknowledgments
 
 - Linera team for the revolutionary microchain architecture
-- WaveHack buildathon organizers
-- The Web3 gaming community
 
 ---
 
