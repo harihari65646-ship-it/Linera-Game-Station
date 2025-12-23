@@ -1,8 +1,10 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Dices, RotateCcw, Users, Trophy, Zap } from "lucide-react";
+import { Dices, RotateCcw, Users, Trophy, Zap, Wifi, WifiOff } from "lucide-react";
+import { useLinera } from "@/contexts/LineraProvider";
+import { lineraClient } from "@/lib/linera/client";
 
 type Player = {
   id: number;
@@ -36,7 +38,13 @@ const PLAYER_COLORS = [
   { bg: "bg-neon-purple", border: "border-neon-purple", text: "text-neon-purple" },
 ];
 
-export function SnakeLaddersGame() {
+interface SnakeLaddersGameProps {
+  roomId?: string;
+}
+
+export function SnakeLaddersGame({ roomId }: SnakeLaddersGameProps = {}) {
+  const { application, isConnected, address } = useLinera();
+
   const [players, setPlayers] = useState<Player[]>([
     { id: 1, name: "Player 1", position: 0, color: "cyan" },
     { id: 2, name: "Player 2", position: 0, color: "pink" },
@@ -47,7 +55,137 @@ export function SnakeLaddersGame() {
   const [winner, setWinner] = useState<Player | null>(null);
   const [message, setMessage] = useState("");
 
+  const [isMultiplayer, setIsMultiplayer] = useState(Boolean(roomId));
+  const [playerIndex, setPlayerIndex] = useState<number>(-1);
+  const [isMyTurn, setIsMyTurn] = useState(false);
+  const [roomStatus, setRoomStatus] = useState<string>("");
+  const [isSubmittingMove, setIsSubmittingMove] = useState(false);
+  const [multiplayerError, setMultiplayerError] = useState<string | null>(null);
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Submit result to blockchain
+  const submitToBlockchain = useCallback(async (winningPlayer: Player) => {
+    if (!application || !isConnected) return;
+
+    // Determine if the player won (Player 1 is the user)
+    const playerWon = winningPlayer.id === 1;
+
+    try {
+      console.log('[SnakeLaddersGame] Submitting result to blockchain:', { winningPlayer: winningPlayer.name, playerWon });
+      await application.query(
+        '{ "query": "mutation { submitSnakeLaddersResult(won: ' + playerWon + ') }" }'
+      );
+      console.log('[SnakeLaddersGame] Result submitted successfully');
+    } catch (error) {
+      console.error('[SnakeLaddersGame] Failed to submit result:', error);
+    }
+  }, [application, isConnected]);
+
+  // ===========================================================================
+  // MULTIPLAYER LOGIC (defined before rollDice to avoid forward reference)
+  // ===========================================================================
+
+  const syncRoomState = useCallback(async () => {
+    if (!roomId || !address) return;
+
+    try {
+      const room = await lineraClient.getRoom(roomId);
+      if (!room) {
+        setMultiplayerError("Room not found");
+        return;
+      }
+
+      setMultiplayerError(null);
+      setRoomStatus(room.status);
+
+      // Use Linera Address32 format (64 hex chars) for player matching
+      // Contract stores Address32(keccak256(publicKey)), not EVM address
+      const myLineraOwner = lineraClient.lineraOwnerAddress?.toLowerCase() ||
+                             lineraClient.getMyOwnerHex().replace('0x', '').toLowerCase();
+      const myEvmAddress = address?.replace('0x', '').toLowerCase();
+
+      const myPlayerIndex = room.players.findIndex(p => {
+        const playerHex = p.replace('Address32(', '').replace(')', '').toLowerCase();
+        // Try Address32 format first, then EVM as fallback
+        if (myLineraOwner && playerHex === myLineraOwner) return true;
+        if (myEvmAddress && playerHex === myEvmAddress) return true;
+        return false;
+      });
+
+      console.log('[SnakeLadders] Player matching:', {
+        myLineraOwner,
+        myEvmAddress,
+        players: room.players,
+        myPlayerIndex
+      });
+
+      setPlayerIndex(myPlayerIndex);
+      setCurrentPlayer(room.currentTurn);
+
+      // FIX: Contract enum serializes as "InProgress" (PascalCase), not "Playing"
+      setIsMyTurn(room.status === 'InProgress' && room.currentTurn === myPlayerIndex);
+
+      try {
+        const gameState = JSON.parse(room.gameState);
+        if (gameState && gameState.positions && Array.isArray(gameState.positions)) {
+          setPlayers(prevPlayers =>
+            prevPlayers.map((player, idx) => ({
+              ...player,
+              position: gameState.positions[idx] || 0,
+              name: idx < room.players.length ? `Player ${idx + 1}` : player.name
+            }))
+          );
+
+          if (gameState.lastDiceRoll) {
+            setDiceValue(gameState.lastDiceRoll);
+          }
+        }
+      } catch (parseError) {
+        console.error('[SnakeLadders] Failed to parse game state:', parseError);
+      }
+
+      if (room.status === 'Finished' && room.winner) {
+        const winnerIndex = room.players.findIndex(p => p === room.winner);
+        if (winnerIndex >= 0 && winnerIndex < players.length) {
+          setWinner(players[winnerIndex]);
+        }
+      }
+
+    } catch (error) {
+      console.error('[SnakeLadders] Error syncing room state:', error);
+      setMultiplayerError("Connection error");
+    }
+  }, [roomId, address, players]);
+
+  const handleMultiplayerRoll = useCallback(async () => {
+    if (!roomId || !isMyTurn || isSubmittingMove || isRolling || winner) return;
+
+    setIsSubmittingMove(true);
+    setIsRolling(true);
+    setMultiplayerError(null);
+
+    try {
+      const success = await lineraClient.makeGameMove(roomId, "roll");
+      if (!success) {
+        setMultiplayerError("Failed to submit roll");
+      } else {
+        await syncRoomState();
+      }
+    } catch (error) {
+      console.error('[SnakeLadders] Error submitting roll:', error);
+      setMultiplayerError("Roll submission failed");
+    } finally {
+      setIsSubmittingMove(false);
+      setIsRolling(false);
+    }
+  }, [roomId, isMyTurn, isSubmittingMove, isRolling, winner, syncRoomState]);
+
   const rollDice = useCallback(() => {
+    if (isMultiplayer) {
+      handleMultiplayerRoll();
+      return;
+    }
+
     if (isRolling || winner) return;
 
     setIsRolling(true);
@@ -66,7 +204,7 @@ export function SnakeLaddersGame() {
         setIsRolling(false);
       }
     }, 100);
-  }, [isRolling, winner, currentPlayer, players]);
+  }, [isMultiplayer, handleMultiplayerRoll, isRolling, winner]);
 
   const movePlayer = (steps: number) => {
     setPlayers((prev) => {
@@ -102,6 +240,9 @@ export function SnakeLaddersGame() {
       // Check for winner
       if (newPosition === 100) {
         setWinner(player);
+
+        // ✅ SUBMIT TO BLOCKCHAIN
+        submitToBlockchain(player);
       }
 
       return newPlayers;
@@ -130,6 +271,23 @@ export function SnakeLaddersGame() {
     const col = row % 2 === 0 ? (square - 1) % 10 : 9 - ((square - 1) % 10);
     return { row: 9 - row, col };
   };
+
+  useEffect(() => {
+    if (isMultiplayer && roomId && isConnected) {
+      syncRoomState();
+
+      pollIntervalRef.current = setInterval(() => {
+        syncRoomState();
+      }, 1000);
+
+      return () => {
+        if (pollIntervalRef.current) {
+          clearInterval(pollIntervalRef.current);
+          pollIntervalRef.current = null;
+        }
+      };
+    }
+  }, [isMultiplayer, roomId, isConnected, syncRoomState]);
 
   const DiceFace = ({ value }: { value: number }) => {
     const dotPositions: Record<number, string[]> = {
@@ -285,16 +443,38 @@ export function SnakeLaddersGame() {
 
               <Button
                 onClick={rollDice}
-                disabled={isRolling || !!winner}
+                disabled={isRolling || !!winner || (isMultiplayer && (!isMyTurn || isSubmittingMove))}
                 variant="arcade"
                 size="lg"
                 className="w-full"
               >
-                {isRolling ? "Rolling..." : "Roll Dice"}
+                {isRolling || isSubmittingMove ? "Rolling..." : "Roll Dice"}
               </Button>
             </div>
 
-            {message && (
+            {isMultiplayer && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-4 flex items-center justify-center gap-2"
+              >
+                {multiplayerError ? (
+                  <p className="text-sm text-red-400 flex items-center gap-2">
+                    <WifiOff className="w-4 h-4" />
+                    {multiplayerError}
+                  </p>
+                ) : (
+                  <>
+                    <Wifi className="w-4 h-4 text-neon-green" />
+                    <p className={`text-sm ${isMyTurn ? "text-neon-cyan" : "text-muted-foreground"}`}>
+                      {isSubmittingMove ? "Submitting roll..." : isMyTurn ? "Your turn" : "Waiting for opponent"}
+                    </p>
+                  </>
+                )}
+              </motion.div>
+            )}
+
+            {!isMultiplayer && message && (
               <motion.p
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}

@@ -1,0 +1,1 @@
+C:\Users\prate\Downloads\anti\neon-arcade\contracts\game-station\target\wasm32-unknown-unknown\release\libgame_station.rlib: C:\Users\prate\Downloads\anti\neon-arcade\contracts\game-station\src\lib.rs

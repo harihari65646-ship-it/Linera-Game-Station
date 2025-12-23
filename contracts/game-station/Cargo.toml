@@ -4,13 +4,17 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-linera-sdk = "0.15"
-serde = { version = "1.0", features = ["derive"] }
-async-graphql = { version = "7.0", default-features = false }
-thiserror = "1.0"
+linera-sdk.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+async-graphql.workspace = true
+futures.workspace = true
 
 [dev-dependencies]
-linera-sdk = { version = "0.15", features = ["test"] }
+linera-sdk = { workspace = true, features = ["test"] }
+
+[lib]
+path = "src/lib.rs"
 
 [[bin]]
 name = "game_station_contract"
@@ -19,3 +23,8 @@ path = "src/contract.rs"
 [[bin]]
 name = "game_station_service"
 path = "src/service.rs"
+
+# Phase 2: Room microchain contract (uses same service binary)
+[[bin]]
+name = "game_room_contract"
+path = "src/room_contract.rs"

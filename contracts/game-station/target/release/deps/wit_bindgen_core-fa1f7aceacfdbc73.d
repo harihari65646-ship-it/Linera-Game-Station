@@ -1,0 +1,10 @@
+C:\Users\prate\Downloads\anti\neon-arcade\contracts\game-station\target\release\deps\wit_bindgen_core-fa1f7aceacfdbc73.d: C:\Users\prate\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\wit-bindgen-core-0.24.0\src\lib.rs C:\Users\prate\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\wit-bindgen-core-0.24.0\src\abi.rs C:\Users\prate\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\wit-bindgen-core-0.24.0\src\ns.rs C:\Users\prate\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\wit-bindgen-core-0.24.0\src\source.rs
+
+C:\Users\prate\Downloads\anti\neon-arcade\contracts\game-station\target\release\deps\libwit_bindgen_core-fa1f7aceacfdbc73.rlib: C:\Users\prate\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\wit-bindgen-core-0.24.0\src\lib.rs C:\Users\prate\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\wit-bindgen-core-0.24.0\src\abi.rs C:\Users\prate\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\wit-bindgen-core-0.24.0\src\ns.rs C:\Users\prate\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\wit-bindgen-core-0.24.0\src\source.rs
+
+C:\Users\prate\Downloads\anti\neon-arcade\contracts\game-station\target\release\deps\libwit_bindgen_core-fa1f7aceacfdbc73.rmeta: C:\Users\prate\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\wit-bindgen-core-0.24.0\src\lib.rs C:\Users\prate\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\wit-bindgen-core-0.24.0\src\abi.rs C:\Users\prate\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\wit-bindgen-core-0.24.0\src\ns.rs C:\Users\prate\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\wit-bindgen-core-0.24.0\src\source.rs
+
+C:\Users\prate\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\wit-bindgen-core-0.24.0\src\lib.rs:
+C:\Users\prate\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\wit-bindgen-core-0.24.0\src\abi.rs:
+C:\Users\prate\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\wit-bindgen-core-0.24.0\src\ns.rs:
+C:\Users\prate\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\wit-bindgen-core-0.24.0\src\source.rs:

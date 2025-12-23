@@ -1,40 +1,42 @@
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { GameCard } from "@/components/games/GameCard";
-import { 
-  Gamepad2, 
-  Zap, 
-  Shield, 
-  Trophy, 
-  Users, 
+import { useGlobalStats } from "@/hooks/useGlobalStats";
+import {
+  Gamepad2,
+  Zap,
+  Shield,
+  Trophy,
+  Users,
   ArrowRight,
   Sparkles,
-  Clock
+  Clock,
+  Activity
 } from "lucide-react";
 
 // Game icons as SVG components for better styling
 const SnakeIcon = () => (
   <svg viewBox="0 0 24 24" className="w-8 h-8" fill="currentColor">
-    <path d="M21 6c-1.1 0-2 .9-2 2 0 .4.1.7.3 1L17 12H9c-1.1 0-2 .9-2 2v2H3c0 1.1.9 2 2 2h6c1.1 0 2-.9 2-2v-2h4.6l2.8 3.2c-.3.3-.4.7-.4 1.1 0 1.1.9 2 2 2s2-.9 2-2c0-1.1-.9-2-2-2-.4 0-.7.1-1 .3l-3-3.4 3-3.4c.3.2.6.3 1 .3 1.1 0 2-.9 2-2s-.9-2-2-2z"/>
+    <path d="M21 6c-1.1 0-2 .9-2 2 0 .4.1.7.3 1L17 12H9c-1.1 0-2 .9-2 2v2H3c0 1.1.9 2 2 2h6c1.1 0 2-.9 2-2v-2h4.6l2.8 3.2c-.3.3-.4.7-.4 1.1 0 1.1.9 2 2 2s2-.9 2-2c0-1.1-.9-2-2-2-.4 0-.7.1-1 .3l-3-3.4 3-3.4c.3.2.6.3 1 .3 1.1 0 2-.9 2-2s-.9-2-2-2z" />
   </svg>
 );
 
 const TicTacToeIcon = () => (
   <svg viewBox="0 0 24 24" className="w-8 h-8" fill="currentColor">
-    <path d="M4 4h4v4H4V4m6 0h4v4h-4V4m6 0h4v4h-4V4M4 10h4v4H4v-4m6 0h4v4h-4v-4m6 0h4v4h-4v-4M4 16h4v4H4v-4m6 0h4v4h-4v-4m6 0h4v4h-4v-4z"/>
+    <path d="M4 4h4v4H4V4m6 0h4v4h-4V4m6 0h4v4h-4V4M4 10h4v4H4v-4m6 0h4v4h-4v-4m6 0h4v4h-4v-4M4 16h4v4H4v-4m6 0h4v4h-4v-4m6 0h4v4h-4v-4z" />
   </svg>
 );
 
 const DiceIcon = () => (
   <svg viewBox="0 0 24 24" className="w-8 h-8" fill="currentColor">
-    <path d="M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2m2 4a1.5 1.5 0 0 0-1.5 1.5A1.5 1.5 0 0 0 7 10a1.5 1.5 0 0 0 1.5-1.5A1.5 1.5 0 0 0 7 7m10 0a1.5 1.5 0 0 0-1.5 1.5A1.5 1.5 0 0 0 17 10a1.5 1.5 0 0 0 1.5-1.5A1.5 1.5 0 0 0 17 7m-5 5a1.5 1.5 0 0 0-1.5 1.5A1.5 1.5 0 0 0 12 15a1.5 1.5 0 0 0 1.5-1.5A1.5 1.5 0 0 0 12 12m-5 5a1.5 1.5 0 0 0-1.5 1.5A1.5 1.5 0 0 0 7 20a1.5 1.5 0 0 0 1.5-1.5A1.5 1.5 0 0 0 7 17m10 0a1.5 1.5 0 0 0-1.5 1.5A1.5 1.5 0 0 0 17 20a1.5 1.5 0 0 0 1.5-1.5A1.5 1.5 0 0 0 17 17z"/>
+    <path d="M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2m2 4a1.5 1.5 0 0 0-1.5 1.5A1.5 1.5 0 0 0 7 10a1.5 1.5 0 0 0 1.5-1.5A1.5 1.5 0 0 0 7 7m10 0a1.5 1.5 0 0 0-1.5 1.5A1.5 1.5 0 0 0 17 10a1.5 1.5 0 0 0 1.5-1.5A1.5 1.5 0 0 0 17 7m-5 5a1.5 1.5 0 0 0-1.5 1.5A1.5 1.5 0 0 0 12 15a1.5 1.5 0 0 0 1.5-1.5A1.5 1.5 0 0 0 12 12m-5 5a1.5 1.5 0 0 0-1.5 1.5A1.5 1.5 0 0 0 7 20a1.5 1.5 0 0 0 1.5-1.5A1.5 1.5 0 0 0 7 17m10 0a1.5 1.5 0 0 0-1.5 1.5A1.5 1.5 0 0 0 17 20a1.5 1.5 0 0 0 1.5-1.5A1.5 1.5 0 0 0 17 17z" />
   </svg>
 );
 
 const UnoIcon = () => (
   <svg viewBox="0 0 24 24" className="w-8 h-8" fill="currentColor">
-    <path d="M4 4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2H4m8 3.5c2.5 0 4.5 2 4.5 4.5s-2 4.5-4.5 4.5-4.5-2-4.5-4.5 2-4.5 4.5-4.5m0 2c-1.38 0-2.5 1.12-2.5 2.5s1.12 2.5 2.5 2.5 2.5-1.12 2.5-2.5-1.12-2.5-2.5-2.5z"/>
+    <path d="M4 4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2H4m8 3.5c2.5 0 4.5 2 4.5 4.5s-2 4.5-4.5 4.5-4.5-2-4.5-4.5 2-4.5 4.5-4.5m0 2c-1.38 0-2.5 1.12-2.5 2.5s1.12 2.5 2.5 2.5 2.5-1.12 2.5-2.5-1.12-2.5-2.5-2.5z" />
   </svg>
 );
 
@@ -100,14 +102,16 @@ const features = [
   },
 ];
 
-const liveActivity = [
-  { player: "CryptoNinja", action: "won Snake", score: "247 pts", time: "2s ago" },
-  { player: "Web3Gamer", action: "challenged", target: "BlockMaster", time: "5s ago" },
-  { player: "PixelKing", action: "beat", target: "AI Hard Mode", time: "12s ago" },
-  { player: "ChainChamp", action: "joined", target: "Room #4821", time: "18s ago" },
-];
-
 export default function LandingPage() {
+  const { stats, activities, isLoading, isDemoMode } = useGlobalStats();
+
+  // Format large numbers for display
+  const formatNumber = (num: number) => {
+    if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
+    if (num >= 1000) return `${(num / 1000).toFixed(0)}K`;
+    return num.toLocaleString();
+  };
+
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
@@ -116,7 +120,7 @@ export default function LandingPage() {
         <div className="absolute inset-0 grid-bg opacity-30" />
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-[100px] animate-pulse" />
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-secondary/20 rounded-full blur-[100px] animate-pulse delay-1000" />
-        
+
         <div className="container mx-auto relative z-10">
           <div className="max-w-4xl mx-auto text-center">
             {/* Badge */}
@@ -151,7 +155,7 @@ export default function LandingPage() {
               transition={{ delay: 0.3 }}
               className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto"
             >
-              Classic arcade games on blockchain. Zero lag. Provably fair. 
+              Classic arcade games on blockchain. Zero lag. Provably fair.
               Real-time multiplayer with sub-second finality.
             </motion.p>
 
@@ -180,20 +184,52 @@ export default function LandingPage() {
               transition={{ delay: 0.5 }}
               className="flex items-center justify-center gap-8 mt-12 flex-wrap"
             >
-              <div className="text-center">
-                <p className="font-pixel text-2xl text-neon-cyan">2,847</p>
-                <p className="text-xs text-muted-foreground">Players Online</p>
-              </div>
+              <motion.div
+                className="text-center"
+                key={stats.playersOnline}
+                initial={{ scale: 1 }}
+                animate={{ scale: [1, 1.1, 1] }}
+                transition={{ duration: 0.3 }}
+              >
+                <p className="font-pixel text-2xl text-neon-cyan">
+                  {formatNumber(stats.playersOnline)}
+                </p>
+                <p className="text-xs text-muted-foreground flex items-center justify-center gap-1">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-neon-green opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-neon-green"></span>
+                  </span>
+                  Players Online
+                </p>
+              </motion.div>
               <div className="h-8 w-px bg-border" />
-              <div className="text-center">
-                <p className="font-pixel text-2xl text-neon-green">147K</p>
+              <motion.div
+                className="text-center"
+                key={stats.gamesPlayed}
+                initial={{ scale: 1 }}
+                animate={{ scale: [1, 1.05, 1] }}
+                transition={{ duration: 0.2 }}
+              >
+                <p className="font-pixel text-2xl text-neon-green">
+                  {formatNumber(stats.gamesPlayed)}
+                </p>
                 <p className="text-xs text-muted-foreground">Games Played</p>
-              </div>
+              </motion.div>
               <div className="h-8 w-px bg-border" />
               <div className="text-center">
                 <p className="font-pixel text-2xl text-neon-purple">&lt;0.5s</p>
                 <p className="text-xs text-muted-foreground">Move Finality</p>
               </div>
+              {isDemoMode && (
+                <>
+                  <div className="h-8 w-px bg-border" />
+                  <div className="text-center">
+                    <p className="font-pixel text-xs text-neon-pink/70 px-2 py-1 rounded bg-neon-pink/10 border border-neon-pink/20">
+                      DEMO MODE
+                    </p>
+                  </div>
+                </>
+              )}
             </motion.div>
           </div>
         </div>
@@ -251,36 +287,45 @@ export default function LandingPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {liveActivity.map((activity, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="flex items-center gap-3 p-4 rounded-lg bg-card border border-border"
-              >
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-xs font-bold text-primary-foreground">
-                  {activity.player[0]}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm truncate">
-                    <span className="font-medium text-foreground">{activity.player}</span>
-                    {" "}
-                    <span className="text-muted-foreground">{activity.action}</span>
-                    {" "}
-                    {activity.target && (
-                      <span className="text-primary">{activity.target}</span>
-                    )}
-                    {activity.score && (
-                      <span className="text-neon-green"> {activity.score}</span>
-                    )}
-                  </p>
-                  <p className="text-xs text-muted-foreground flex items-center gap-1">
-                    <Clock className="w-3 h-3" /> {activity.time}
-                  </p>
-                </div>
-              </motion.div>
-            ))}
+            <AnimatePresence mode="popLayout">
+              {activities.slice(0, 4).map((activity, index) => (
+                <motion.div
+                  key={activity.id}
+                  layout
+                  initial={{ opacity: 0, x: -20, scale: 0.9 }}
+                  animate={{ opacity: 1, x: 0, scale: 1 }}
+                  exit={{ opacity: 0, x: 20, scale: 0.9 }}
+                  transition={{
+                    type: "spring",
+                    stiffness: 500,
+                    damping: 30,
+                    delay: index * 0.05
+                  }}
+                  className="flex items-center gap-3 p-4 rounded-lg bg-card border border-border hover:border-primary/30 transition-colors group"
+                >
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-xs font-bold text-primary-foreground group-hover:scale-110 transition-transform">
+                    {activity.player[0]}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm truncate">
+                      <span className="font-medium text-foreground">{activity.player}</span>
+                      {" "}
+                      <span className="text-muted-foreground">{activity.action}</span>
+                      {" "}
+                      {activity.target && (
+                        <span className="text-primary">{activity.target}</span>
+                      )}
+                      {activity.score && (
+                        <span className="text-neon-green"> {activity.score}</span>
+                      )}
+                    </p>
+                    <p className="text-xs text-muted-foreground flex items-center gap-1">
+                      <Clock className="w-3 h-3" /> {activity.time}
+                    </p>
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
           </div>
         </div>
       </section>
@@ -334,13 +379,13 @@ export default function LandingPage() {
           >
             <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-secondary/20 to-destructive/20" />
             <div className="absolute inset-0 grid-bg opacity-20" />
-            
+
             <div className="relative z-10 p-8 md:p-16 text-center">
               <h2 className="font-pixel text-2xl md:text-3xl text-foreground mb-4">
                 READY TO <span className="text-neon-pink">PLAY</span>?
               </h2>
               <p className="text-muted-foreground mb-8 max-w-lg mx-auto">
-                Connect your wallet and start your journey. 
+                Connect your wallet and start your journey.
                 100 free tokens waiting for new players.
               </p>
               <Link to="/lobby">

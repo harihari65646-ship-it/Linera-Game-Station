@@ -3,21 +3,25 @@ import { Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useLineraClient } from "@/hooks/useLineraClient";
-import { 
-  Gamepad2, 
-  Trophy, 
-  User, 
-  Wallet, 
-  Menu, 
+import {
+  Gamepad2,
+  Trophy,
+  User,
+  Wallet,
+  Menu,
   X,
   Zap,
   LogOut,
-  Loader2
+  Loader2,
+  Users,
+  Crown
 } from "lucide-react";
 
 const navLinks = [
   { href: "/", label: "Home", icon: Gamepad2 },
   { href: "/lobby", label: "Lobby", icon: Zap },
+  { href: "/tournaments", label: "Tournaments", icon: Crown },
+  { href: "/social", label: "Social", icon: Users },
   { href: "/leaderboard", label: "Leaderboard", icon: Trophy },
   { href: "/profile", label: "Profile", icon: User },
 ];
@@ -53,17 +57,16 @@ export function Navbar() {
             {navLinks.map((link) => {
               const isActive = location.pathname === link.href;
               const Icon = link.icon;
-              
+
               return (
                 <Link key={link.href} to={link.href}>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className={`gap-2 relative ${
-                      isActive 
-                        ? "text-primary" 
+                    className={`gap-2 relative ${isActive
+                        ? "text-primary"
                         : "text-muted-foreground hover:text-foreground"
-                    }`}
+                      }`}
                   >
                     <Icon className="w-4 h-4" />
                     {link.label}
@@ -78,6 +81,26 @@ export function Navbar() {
               );
             })}
           </div>
+
+          {/* Linera Network Status */}
+          {isConnected && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-neon-green/10 border border-neon-green/30"
+            >
+              <div className="relative">
+                <div className="w-2 h-2 rounded-full bg-neon-green" />
+                <div className="absolute inset-0 w-2 h-2 rounded-full bg-neon-green animate-ping" />
+              </div>
+              <span className="text-[10px] font-pixel text-neon-green uppercase tracking-wider">
+                Local Linera
+              </span>
+              <span className="text-[9px] text-neon-green/70 font-mono">
+                {wallet?.chainId?.slice(0, 8)}...
+              </span>
+            </motion.div>
+          )}
 
           {/* Wallet Connect */}
           <div className="flex items-center gap-2">
@@ -117,15 +140,14 @@ export function Navbar() {
             {navLinks.map((link) => {
               const isActive = location.pathname === link.href;
               const Icon = link.icon;
-              
+
               return (
                 <Link key={link.href} to={link.href} onClick={() => setIsOpen(false)}>
                   <div
-                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                      isActive 
-                        ? "bg-primary/10 text-primary" 
+                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${isActive
+                        ? "bg-primary/10 text-primary"
                         : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                    }`}
+                      }`}
                   >
                     <Icon className="w-5 h-5" />
                     <span className="font-medium">{link.label}</span>

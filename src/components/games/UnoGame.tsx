@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { RotateCcw, Users, Trophy, Zap, Plus, Ban } from "lucide-react";
+import { useLinera } from "@/contexts/LineraProvider";
 
 type CardColor = "red" | "blue" | "green" | "yellow" | "wild";
 type CardValue = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | "skip" | "reverse" | "draw2" | "wild" | "wild4";
@@ -18,6 +19,10 @@ interface Player {
   name: string;
   cards: UnoCard[];
   isBot: boolean;
+}
+
+interface UnoGameProps {
+  roomId?: string;
 }
 
 const COLORS: CardColor[] = ["red", "blue", "green", "yellow"];
@@ -63,7 +68,13 @@ function shuffleDeck(deck: UnoCard[]): UnoCard[] {
   return shuffled;
 }
 
-export function UnoGame() {
+export function UnoGame({ roomId }: UnoGameProps = {}) {
+  const { application, isConnected } = useLinera();
+
+  // Note: Full multiplayer support for UNO is complex due to hidden card states
+  // For now, display a message if roomId is provided
+  // The blockchain backend would need to manage hidden state server-side
+
   const [deck, setDeck] = useState<UnoCard[]>([]);
   const [discardPile, setDiscardPile] = useState<UnoCard[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
@@ -74,6 +85,24 @@ export function UnoGame() {
   const [selectedColor, setSelectedColor] = useState<CardColor | null>(null);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [message, setMessage] = useState("");
+
+  // Submit result to blockchain
+  const submitToBlockchain = useCallback(async (winningPlayer: Player) => {
+    if (!application || !isConnected) return;
+
+    // Determine if the player won (player has id: 1 and isBot: false)
+    const playerWon = !winningPlayer.isBot;
+
+    try {
+      console.log('[UnoGame] Submitting result to blockchain:', { winningPlayer: winningPlayer.name, playerWon });
+      await application.query(
+        '{ "query": "mutation { submitUnoResult(won: ' + playerWon + ') }" }'
+      );
+      console.log('[UnoGame] Result submitted successfully');
+    } catch (error) {
+      console.error('[UnoGame] Failed to submit result:', error);
+    }
+  }, [application, isConnected]);
 
   const startGame = useCallback(() => {
     const shuffledDeck = shuffleDeck(generateDeck());
@@ -165,6 +194,10 @@ export function UnoGame() {
     // Check for win
     if (players[0].cards.length === 1) {
       setWinner(players[0]);
+
+      // ✅ SUBMIT TO BLOCKCHAIN
+      submitToBlockchain(players[0]);
+
       return;
     }
 
@@ -285,6 +318,10 @@ export function UnoGame() {
       // Check for win
       if (player.cards.length === 1) {
         setWinner(player);
+
+        // ✅ SUBMIT TO BLOCKCHAIN
+        submitToBlockchain(player);
+
         return;
       }
 
@@ -377,6 +414,22 @@ export function UnoGame() {
 
   return (
     <div className="space-y-6">
+      {/* Multiplayer Notice */}
+      {roomId && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-4 bg-neon-purple/10 border border-neon-purple/30 rounded-lg text-center"
+        >
+          <p className="text-sm text-neon-purple font-pixel">
+            Multiplayer UNO support coming soon!
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Playing vs bots for now. Full online multiplayer requires server-side card management.
+          </p>
+        </motion.div>
+      )}
+
       {/* Winner Modal */}
       <AnimatePresence>
         {winner && (

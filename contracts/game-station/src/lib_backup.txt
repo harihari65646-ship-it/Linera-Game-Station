@@ -1,0 +1,20 @@
+//! Linera Game Station - ABI Definitions
+//! 
+//! This module defines the Application Binary Interface (ABI) for the
+//! Linera Game Station smart contract. It includes all types for operations,
+//! messages, and queries.
+
+use linera_sdk::base::{AccountOwner, Amount, Timestamp};
+use serde::{Deserialize, Serialize};
+use async_graphql::{InputObject, SimpleObject};
+
+/// The ABI for the Game Station application
+linera_sdk::graphql_service_interface!(GameStationAbi, GameStationState);
+
+/// Types of games supported by the Game Station
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[cfg_attr(feature = "graphql", derive(async_graphql::Enum))]
+pub enum GameType {
+    Snake,
+    TicTacToe,
+    SnakeLadders,

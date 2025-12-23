@@ -1,0 +1,38 @@
+# Dependencies
+node_modules
+.pnpm-store
+
+# Build outputs (will be built inside container)
+dist
+contracts/game-station/target
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Environment files (will be generated)
+.env
+.env.local
+.env.production
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Documentation (not needed for build)
+*.md
+!README.md
+
+# Lock files (use pnpm-lock.yaml)
+package-lock.json
+bun.lockb

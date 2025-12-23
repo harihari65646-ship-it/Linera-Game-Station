@@ -43,6 +43,9 @@ export interface GameStationConfig {
   faucetUrl: string;
   applicationId: string;
   storageUrl?: string;
+  chainId?: string;
+  graphqlUrl?: string;
+  serviceUrl?: string;
 }
 
 export interface UserProfile {
@@ -72,12 +75,22 @@ export interface LeaderboardEntry {
 
 export interface GameRoom {
   id: string;
-  game: string;
-  players: number;
+  roomId?: string; // Alias for id
+  gameType: string;
+  game?: string; // Legacy alias
+  creator: string;
+  host?: string; // Legacy alias
+  players: string[];
   maxPlayers: number;
-  fee: number;
-  host: string;
-  status: 'waiting' | 'playing' | 'finished';
+  entryFee: number;
+  fee?: number; // Legacy alias
+  // Status from contract is uppercase: WAITING, IN_PROGRESS, FINISHED
+  status: 'WAITING' | 'IN_PROGRESS' | 'FINISHED' | 'ABANDONED' | 'waiting' | 'playing' | 'finished';
+  currentState?: string;
+  winner?: string | null;
+  createdAt?: number;
+  lastMoveTime?: number;
+  gameMode?: string;
   chainId?: string;
 }
 
@@ -131,4 +144,106 @@ export interface JoinRoomOperation {
 export interface GameMoveOperation {
   roomId: string;
   moveData: string;
+}
+
+// =============================================================================
+// MULTIPLAYER TYPES
+// =============================================================================
+
+export interface MultiplayerGameRoom {
+  roomId: string;
+  id?: string; // Contract returns 'id', we normalize to roomId
+  gameType: string;
+  creator: string;
+  players: string[];
+  maxPlayers: number;
+  // Status from contract is uppercase: WAITING, IN_PROGRESS, FINISHED, ABANDONED
+  status: 'WAITING' | 'IN_PROGRESS' | 'FINISHED' | 'ABANDONED' | 'Waiting' | 'Playing' | 'Finished' | 'Abandoned';
+  currentState?: string; // Contract uses currentState
+  currentTurn?: number;
+  gameState?: string;
+  winner: string | null;
+  lastMoveAt?: number;
+  lastMoveTime?: number;
+  gameMode?: string;
+}
+
+export interface Tournament {
+  id: string;
+  name: string;
+  gameType: string;
+  maxPlayers: number;
+  players: string[];
+  status: 'Registration' | 'InProgress' | 'Finished';
+  currentRound: number;
+  winner: string | null;
+}
+
+export interface FriendEntry {
+  address: string;
+  addedAt: number;
+}
+
+export interface FriendRequest {
+  from: string;
+  to: string;
+  createdAt: number;
+}
+
+export interface Challenge {
+  id: string;
+  challenger: string;
+  challenged: string;
+  gameType: string;
+  status: 'Pending' | 'Accepted' | 'Declined' | 'Expired';
+  roomId: string | null;
+  expiresAt: number;
+}
+
+// GraphQL response types for multiplayer
+export interface CreateRoomResponse {
+  createRoom: {
+    roomId: string;
+    chainId?: string;
+  };
+}
+
+export interface RoomQueryResponse {
+  room: MultiplayerGameRoom;
+}
+
+export interface ActiveRoomsResponse {
+  activeRooms: MultiplayerGameRoom[];
+}
+
+export interface TournamentsResponse {
+  activeTournaments: Tournament[];
+}
+
+export interface FriendsResponse {
+  friends: FriendEntry[];
+}
+
+export interface FriendRequestsResponse {
+  friendRequests: FriendRequest[];
+}
+
+export interface ChallengesResponse {
+  challenges: Challenge[];
+}
+
+export interface MutationSuccessResponse {
+  success: boolean;
+}
+
+export interface CreateTournamentResponse {
+  createTournament: {
+    tournamentId: string;
+  };
+}
+
+export interface CreateChallengeResponse {
+  createChallenge: {
+    challengeId: string;
+  };
 }

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Play, RotateCcw, Trophy, Pause, Volume2, VolumeX } from "lucide-react";
 import { useSoundEffects } from "@/hooks/useSoundEffects";
 import { useAchievements } from "@/hooks/useAchievements";
+import { useLinera } from "@/contexts/LineraProvider";
 import { ParticleExplosion, AchievementNotification, WinCelebration } from "@/components/effects/ParticleEffects";
 
 const GRID_SIZE = 20;
@@ -33,15 +34,18 @@ export function SnakeGame({ onScoreUpdate, onGameEnd }: SnakeGameProps) {
   const [showCoinEffect, setShowCoinEffect] = useState(false);
   const [coinPosition, setCoinPosition] = useState({ x: 50, y: 50 });
   const [isMuted, setIsMuted] = useState(false);
-  
+
   const gameLoopRef = useRef<NodeJS.Timeout | null>(null);
   const directionRef = useRef(direction);
 
   // Sound effects
   const { play, toggleMute } = useSoundEffects();
-  
+
   // Achievements
   const { trackGamePlayed, recentUnlock, clearRecentUnlock } = useAchievements();
+
+  // Linera blockchain connection
+  const { application, isConnected } = useLinera();
 
   const generateFood = useCallback((currentSnake: Position[]): Position => {
     let newFood: Position;
@@ -84,9 +88,9 @@ export function SnakeGame({ onScoreUpdate, onGameEnd }: SnakeGameProps) {
     }
   };
 
-  const handleGameOver = useCallback((finalScore: number) => {
+  const handleGameOver = useCallback(async (finalScore: number) => {
     setGameState("gameover");
-    
+
     // Check for new high score
     const isNewHighScore = finalScore > highScore;
     if (isNewHighScore) {
@@ -97,12 +101,25 @@ export function SnakeGame({ onScoreUpdate, onGameEnd }: SnakeGameProps) {
     } else {
       play('gameOver');
     }
-    
+
+    // ✅ SUBMIT TO BLOCKCHAIN
+    if (application && isConnected && finalScore > 0) {
+      try {
+        console.log('[SnakeGame] Submitting score to blockchain:', finalScore);
+        await application.query(
+          '{ "query": "mutation { submitSnakeScore(score: ' + finalScore + ') }" }'
+        );
+        console.log('[SnakeGame] Score submitted successfully');
+      } catch (error) {
+        console.error('[SnakeGame] Failed to submit score:', error);
+      }
+    }
+
     // Track game and check achievements
     trackGamePlayed('snake', isNewHighScore, { score: finalScore });
-    
+
     onGameEnd?.(finalScore);
-  }, [highScore, play, trackGamePlayed, onGameEnd]);
+  }, [highScore, play, trackGamePlayed, onGameEnd, application, isConnected]);
 
   const moveSnake = useCallback(() => {
     if (gameState !== "playing") return;

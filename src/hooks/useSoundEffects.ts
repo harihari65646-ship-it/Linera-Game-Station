@@ -6,20 +6,23 @@
 
 import { useCallback, useRef } from 'react';
 
-type SoundType = 
-  | 'coin' 
-  | 'win' 
-  | 'lose' 
-  | 'move' 
-  | 'click' 
-  | 'powerup' 
-  | 'achievement' 
+type SoundType =
+  | 'coin'
+  | 'win'
+  | 'lose'
+  | 'move'
+  | 'click'
+  | 'powerup'
+  | 'achievement'
   | 'gameOver'
   | 'countdown'
   | 'levelUp';
 
+type HapticType = 'light' | 'medium' | 'heavy' | 'success' | 'warning' | 'error';
+
 interface UseSoundEffectsReturn {
   play: (sound: SoundType) => void;
+  haptic: (type?: HapticType) => void;
   setVolume: (volume: number) => void;
   isMuted: boolean;
   toggleMute: () => void;
@@ -35,16 +38,16 @@ function createOscillatorSound(
 ): void {
   const oscillator = audioContext.createOscillator();
   const gainNode = audioContext.createGain();
-  
+
   oscillator.type = type;
   oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
-  
+
   gainNode.gain.setValueAtTime(gain, audioContext.currentTime);
   gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
-  
+
   oscillator.connect(gainNode);
   gainNode.connect(audioContext.destination);
-  
+
   oscillator.start();
   oscillator.stop(audioContext.currentTime + duration);
 }
@@ -77,7 +80,7 @@ export function useSoundEffects(): UseSoundEffectsReturn {
 
   const play = useCallback((sound: SoundType) => {
     if (mutedRef.current) return;
-    
+
     const ctx = getAudioContext();
     const vol = volumeRef.current;
 
@@ -175,8 +178,35 @@ export function useSoundEffects(): UseSoundEffectsReturn {
     mutedRef.current = !mutedRef.current;
   }, []);
 
+  // Haptic feedback for mobile devices
+  const haptic = useCallback((type: HapticType = 'light') => {
+    if (!navigator.vibrate) return;
+
+    switch (type) {
+      case 'light':
+        navigator.vibrate(10);
+        break;
+      case 'medium':
+        navigator.vibrate(25);
+        break;
+      case 'heavy':
+        navigator.vibrate(50);
+        break;
+      case 'success':
+        navigator.vibrate([10, 50, 20]);
+        break;
+      case 'warning':
+        navigator.vibrate([30, 30, 30]);
+        break;
+      case 'error':
+        navigator.vibrate([50, 100, 50, 100, 50]);
+        break;
+    }
+  }, []);
+
   return {
     play,
+    haptic,
     setVolume,
     isMuted: mutedRef.current,
     toggleMute,
